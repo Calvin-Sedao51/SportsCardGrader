@@ -13,7 +13,7 @@ from app.schemas import (Authenticity, CompListing, Condition, Identity,
 
 GOOD_VISION = VisionResult(
     photo_ok=True,
-    identity=Identity(player="Luka Doncic", year="2018", set_name="Panini Prizm",
+    identity=Identity(subject="Luka Doncic", year="2018", set_name="Panini Prizm",
                       card_number="280", search_string="2018 Panini Prizm Luka Doncic #280",
                       confidence=0.92),
     condition=Condition(observations=[], grade_low=6, grade_high=8),

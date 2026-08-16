@@ -20,14 +20,14 @@ def test_parse_strips_code_fences():
 
 
 def test_parse_full_result():
-    raw = ('{"photo_ok": true, "identity": {"player": "Luka Doncic", "year": "2018", '
+    raw = ('{"photo_ok": true, "identity": {"subject": "Luka Doncic", "year": "2018", '
            '"set_name": "Panini Prizm", "card_number": "280", "variant": null, '
            '"search_string": "2018 Panini Prizm Luka Doncic #280", "confidence": 0.92}, '
            '"condition": {"observations": [{"area": "corners", "severity": "minor", '
            '"note": "slight fray top-left"}], "grade_low": 6, "grade_high": 8}, '
            '"authenticity": {"red_flags": [], "risk": "low"}, "ai_value_note": null}')
     r = parse_vision_json(raw)
-    assert r.identity.player == "Luka Doncic"
+    assert r.identity.subject == "Luka Doncic"
     assert r.condition.grade_high == 8
 
 
@@ -68,7 +68,7 @@ def test_prompt_mentions_slab_shape():
 
 
 def test_parse_round_trips_slab():
-    raw = ('{"photo_ok": true, "identity": {"player": "Luka Doncic", "year": "2018", '
+    raw = ('{"photo_ok": true, "identity": {"subject": "Luka Doncic", "year": "2018", '
            '"set_name": "Panini Prizm", "card_number": "280", "variant": null, '
            '"search_string": "2018 Panini Prizm Luka Doncic #280 PSA 9", "confidence": 0.9}, '
            '"condition": null, "slab": {"company": "PSA", "grade": "9"}, '

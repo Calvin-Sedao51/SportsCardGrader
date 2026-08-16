@@ -105,7 +105,7 @@ def test_scan_end_to_end_undervalued(client):
     body = resp.json()
 
     identity = body["vision"]["identity"]
-    assert identity["player"] == "Luka Doncic"
+    assert identity["subject"] == "Luka Doncic"
     assert identity["year"] == "2018"
     assert identity["set_name"] == "Panini Prizm"
     assert identity["card_number"] == "280"

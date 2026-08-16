@@ -15,7 +15,7 @@ from app.vision.providers import ProviderAuthError, ProviderRateLimited
 
 GOOD_VISION = VisionResult(
     photo_ok=True,
-    identity=Identity(player="Luka Doncic", year="2018", set_name="Panini Prizm",
+    identity=Identity(subject="Luka Doncic", year="2018", set_name="Panini Prizm",
                       card_number="280", search_string="2018 Panini Prizm Luka Doncic #280",
                       confidence=0.92),
     condition=Condition(observations=[], grade_low=6, grade_high=8),
@@ -25,7 +25,7 @@ LISTINGS = [CompListing(title=f"Luka raw {i}", price=50.0 + i, graded=False) for
 
 SLAB_VISION = VisionResult(
     photo_ok=True,
-    identity=Identity(player="Luka Doncic", year="2018", set_name="Panini Prizm",
+    identity=Identity(subject="Luka Doncic", year="2018", set_name="Panini Prizm",
                       card_number="280",
                       search_string="2018 Panini Prizm Luka Doncic #280 PSA 9",
                       confidence=0.92),
@@ -58,7 +58,7 @@ def test_full_scan_happy_path(client, monkeypatch):
     resp = post_scan(client, asking_price="30")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["vision"]["identity"]["player"] == "Luka Doncic"
+    assert body["vision"]["identity"]["subject"] == "Luka Doncic"
     assert body["comps"]["raw_count"] == 4
     assert body["verdict"]["verdict"] == "undervalued"
 

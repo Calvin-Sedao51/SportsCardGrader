@@ -42,7 +42,7 @@ def make_record(**overrides) -> CardRecord:
 def test_from_scan_response_maps_fields():
     record = make_record()
     assert record.v == 1 and record.kind == "card"
-    assert record.identity.player == "Luka Doncic"
+    assert record.identity.subject == "Luka Doncic"
     assert record.condition.grade_low == 6
     assert record.comps.summary.raw_median == 47.0
     assert record.comps.as_of  # stamped

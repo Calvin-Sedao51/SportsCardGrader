@@ -19,7 +19,7 @@ class MetadataTooLarge(Exception):
 
 def _title(record: CardRecord) -> str:
     identity = record.identity
-    parts = [identity.player, "—", identity.year, identity.set_name]
+    parts = [identity.subject, "—", identity.year, identity.set_name]
     if identity.card_number:
         parts.append(f"#{identity.card_number}")
     if record.slab:
@@ -51,7 +51,7 @@ def _body(record: CardRecord) -> str:
     if record.images.back:
         lines += [f"![back]({record.images.back})", ""]
     lines += ["| | |", "|---|---|",
-              f"| Player | {identity.player} |",
+              f"| Player | {identity.subject} |",
               f"| Year | {identity.year} |",
               f"| Set | {identity.set_name} |"]
     if identity.card_number:

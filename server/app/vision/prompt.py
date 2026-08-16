@@ -32,7 +32,7 @@ Respond with ONLY a JSON object, no prose, matching exactly this shape:
 {{
   "photo_ok": bool,            // false if too blurry/glared/cropped to judge
   "photo_issue": str|null,     // if photo_ok is false: what to fix when retaking
-  "identity": {{"player": str, "year": str, "set_name": str, "card_number": str|null,
+  "identity": {{"subject": str, "year": str, "set_name": str, "card_number": str|null,
                "variant": str|null, "search_string": str, "confidence": float 0-1}} | null,
   "condition": {{"observations": [{{"area": "corners"|"edges"|"surface"|"centering",
                 "severity": "none"|"minor"|"moderate"|"heavy", "note": str}}],

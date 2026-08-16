@@ -1,8 +1,12 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 
+CardCategory = Literal["sports", "pokemon", "yugioh", "magic", "onepiece",
+                       "other_tcg", "other"]
+
 class Identity(BaseModel):
-    player: str
+    subject: str  # player (sports) or card/character name (TCG)
+    category: CardCategory = "sports"  # lenient default for models that omit it
     year: str
     set_name: str
     card_number: Optional[str] = None

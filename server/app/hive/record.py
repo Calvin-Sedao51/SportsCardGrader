@@ -76,7 +76,7 @@ def build_tags(identity: Identity, community: str) -> list[str]:
     collide with organic tags. Hive tags must match [a-z][a-z0-9-]*.
     """
     tags = [community, "sportscards", "cardscanner"]
-    for raw, cap in ((identity.player, 32), (identity.year, 12), (identity.set_name, 24)):
+    for raw, cap in ((identity.subject, 32), (identity.year, 12), (identity.set_name, 24)):
         slug = slugify(raw or "", cap)
         if slug:
             tag = f"sc-{slug}"
@@ -88,10 +88,10 @@ def build_tags(identity: Identity, community: str) -> list[str]:
 def card_permlink(record: CardRecordDraft) -> str:
     """Deterministic for a record_id: an accidental second publish attempt
     targets the same permlink (an edit) instead of creating a duplicate post."""
-    player = slugify(record.identity.player, 32) or "unknown"
+    subject = slugify(record.identity.subject, 32) or "unknown"
     year = slugify(record.identity.year, 12) or "na"
     digest = hashlib.sha256(record.record_id.encode()).hexdigest()[:8]
-    return f"card-{player}-{year}-{digest}"
+    return f"card-{subject}-{year}-{digest}"
 
 
 def from_scan_response(scan: ScanResponse, *, record_id: str, images: CardImages,
