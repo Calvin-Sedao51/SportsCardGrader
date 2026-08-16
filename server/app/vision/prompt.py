@@ -26,13 +26,17 @@ _FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.M)
 def build_prompt() -> str:
     scale = "\n".join(f"PSA {g}: {e['label']} — {e['description']}"
                       for g, e in sorted(PSA_SCALE.items(), key=lambda kv: int(kv[0]), reverse=True))
-    return f"""You are analyzing photos of a sports trading card for a collector deciding whether to buy it.
+    return f"""You are analyzing photos of a trading card — a sports card or a trading card game
+(TCG) card such as Pokémon, Yu-Gi-Oh!, Magic: The Gathering, or One Piece — for a collector
+deciding whether to buy it.
 
 Respond with ONLY a JSON object, no prose, matching exactly this shape:
 {{
   "photo_ok": bool,            // false if too blurry/glared/cropped to judge
   "photo_issue": str|null,     // if photo_ok is false: what to fix when retaking
-  "identity": {{"subject": str, "year": str, "set_name": str, "card_number": str|null,
+  "identity": {{"subject": str,  // player name (sports) or card/character name (TCG)
+               "category": "sports"|"pokemon"|"yugioh"|"magic"|"onepiece"|"other_tcg"|"other",
+               "year": str, "set_name": str, "card_number": str|null,
                "variant": str|null, "search_string": str, "confidence": float 0-1}} | null,
   "condition": {{"observations": [{{"area": "corners"|"edges"|"surface"|"centering",
                 "severity": "none"|"minor"|"moderate"|"heavy", "note": str}}],
@@ -44,18 +48,23 @@ Respond with ONLY a JSON object, no prose, matching exactly this shape:
 }}
 
 Rules:
-- "search_string" must be a normalized eBay search like "2018 Panini Prizm Luka Doncic #280 Silver".
+- "search_string" must be a normalized eBay search, e.g.
+  sports: "2018 Panini Prizm Luka Doncic #280 Silver"
+  TCG:    "1999 Pokémon Base Set Charizard #4 Holo 1st Edition"
+- For TCG cards, put edition (1st Edition/Unlimited), holo/foil, language, and rarity in
+  "variant" AND in "search_string" — these dominate TCG pricing.
 - Grade as a RANGE; half grades like 6.5 or 8.5 are allowed. A phone photo cannot distinguish
   PSA 9 from 10 — be honest about the spread.
 - Authenticity red_flags are warning signs (print dot pattern, era-inconsistent fonts/logos,
-  gloss, miscut suggesting a reprint sheet), NOT a certification.
+  gloss, miscut suggesting a reprint sheet; for TCGs also missing texture/foil pattern or
+  wrong card-back shade), NOT a certification.
 - If the card is slabbed: read company and grade from the label; include the company and
   grade in search_string (e.g. "2018 Panini Prizm Luka Doncic #280 PSA 9"); set condition
   to null (the slab already graded it); authenticity red flags should consider fake-slab
   signs (label font, hologram).
 - If photo_ok is false, set identity/condition/authenticity to null.
 
-PSA grading scale for reference:
+PSA grading scale for reference (applies to sports and TCG cards alike):
 {scale}"""
 
 
