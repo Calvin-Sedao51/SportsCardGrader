@@ -6,10 +6,18 @@ import httpx
 from pydantic import ValidationError
 
 from app.comps import is_graded
-from app.schemas import CompListing
+from app.schemas import CardCategory, CompListing
 
 _BASES = {"production": "https://api.ebay.com", "sandbox": "https://api.sandbox.ebay.com"}
-SPORTS_CARDS_CATEGORY = "212"  # keep in sync with _sacat in web ResultsScreen sold link
+
+# eBay Browse category ids. 212 = Sports Trading Cards; 183454 = CCG Individual
+# Cards (Pokémon, Yu-Gi-Oh!, MTG, One Piece all live here). "other" gets no
+# filter. Keep in sync with SACAT_BY_CATEGORY in web/src/screens/ResultsScreen.tsx.
+EBAY_CATEGORY: dict[str, str] = {
+    "sports": "212",
+    "pokemon": "183454", "yugioh": "183454", "magic": "183454",
+    "onepiece": "183454", "other_tcg": "183454",
+}
 
 
 class EbayClient:
@@ -42,17 +50,21 @@ class EbayClient:
     # the median of only the cheap tail. Residual bias remains for cards with
     # >200 active listings; the fix (two calls: Best Match for the median,
     # price-asc for the floor) is deliberately deferred.
-    async def search(self, query: str, limit: int = 200) -> list[CompListing]:
+    async def search(self, query: str, category: CardCategory = "sports",
+                     limit: int = 200) -> list[CompListing]:
         token = await self._get_token()
+        # sort=price → ascending by price (Browse API; "-price" would be
+        # descending). Without it eBay returns Best Match ordering, and
+        # the cheapest true comps may never appear in the first `limit`.
+        params = {"q": query, "limit": limit, "sort": "price"}
+        category_id = EBAY_CATEGORY.get(category)
+        if category_id:
+            params["category_ids"] = category_id
         resp = await self._http.get(
             "/buy/browse/v1/item_summary/search",
             headers={"Authorization": f"Bearer {token}",
                      "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"},  # change for non-US deployments
-            # sort=price → ascending by price (Browse API; "-price" would be
-            # descending). Without it eBay returns Best Match ordering, and
-            # the cheapest true comps may never appear in the first `limit`.
-            params={"q": query, "category_ids": SPORTS_CARDS_CATEGORY,
-                    "limit": limit, "sort": "price"},
+            params=params,
         )
         resp.raise_for_status()
         items = resp.json().get("itemSummaries", [])

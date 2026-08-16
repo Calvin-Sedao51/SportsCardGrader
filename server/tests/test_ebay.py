@@ -4,13 +4,16 @@ import pytest
 from app.ebay import EbayClient
 
 
-def make_transport(token_calls: list | None = None, extra_items: list | None = None):
+def make_transport(token_calls: list | None = None, extra_items: list | None = None,
+                   seen_params: list | None = None):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/identity/v1/oauth2/token":
             if token_calls is not None:
                 token_calls.append(1)
             return httpx.Response(200, json={"access_token": "tok", "expires_in": 7200})
         if request.url.path == "/buy/browse/v1/item_summary/search":
+            if seen_params is not None:
+                seen_params.append(dict(request.url.params))
             assert request.headers["Authorization"] == "Bearer tok"
             # Browse API: sort=price is ascending by price; without it eBay
             # returns Best Match, so the cheapest listings may not appear at all.
@@ -52,6 +55,30 @@ async def test_token_cached_across_searches():
     await client.search("first query")
     await client.search("second query")
     assert len(token_calls) == 1
+
+
+async def test_search_sports_uses_sports_category():
+    seen: list = []
+    client = EbayClient("id", "secret", "production",
+                        transport=make_transport(seen_params=seen))
+    await client.search("2018 Prizm Luka Doncic", category="sports")
+    assert seen[0]["category_ids"] == "212"
+
+
+async def test_search_tcg_uses_ccg_category():
+    seen: list = []
+    client = EbayClient("id", "secret", "production",
+                        transport=make_transport(seen_params=seen))
+    await client.search("1999 Pokemon Base Set Charizard", category="pokemon")
+    assert seen[0]["category_ids"] == "183454"
+
+
+async def test_search_other_omits_category_filter():
+    seen: list = []
+    client = EbayClient("id", "secret", "production",
+                        transport=make_transport(seen_params=seen))
+    await client.search("mystery card", category="other")
+    assert "category_ids" not in seen[0]
 
 
 async def test_item_without_price_skipped():
