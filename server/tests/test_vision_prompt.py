@@ -1,5 +1,8 @@
+from typing import get_args
+
 import pytest
 
+from app.schemas import CardCategory
 from app.vision.prompt import VisionParseError, build_prompt, parse_vision_json
 
 
@@ -95,7 +98,9 @@ def test_parse_tolerates_leading_prose_and_trailing_text():
 
 def test_prompt_covers_tcg():
     p = build_prompt()
-    assert "Pokémon" in p and "category" in p and "1st Edition" in p
+    assert "Pokémon" in p and "1st Edition" in p
+    for cat in get_args(CardCategory):
+        assert f'"{cat}"' in p
 
 
 def test_parse_category_round_trips():

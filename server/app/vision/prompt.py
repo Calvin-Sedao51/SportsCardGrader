@@ -36,6 +36,7 @@ Respond with ONLY a JSON object, no prose, matching exactly this shape:
   "photo_issue": str|null,     // if photo_ok is false: what to fix when retaking
   "identity": {{"subject": str,  // player name (sports) or card/character name (TCG)
                "category": "sports"|"pokemon"|"yugioh"|"magic"|"onepiece"|"other_tcg"|"other",
+                             // other_tcg = any other card game (Lorcana, Digimon...); other = non-game collectible card
                "year": str, "set_name": str, "card_number": str|null,
                "variant": str|null, "search_string": str, "confidence": float 0-1}} | null,
   "condition": {{"observations": [{{"area": "corners"|"edges"|"surface"|"centering",
@@ -50,7 +51,7 @@ Respond with ONLY a JSON object, no prose, matching exactly this shape:
 Rules:
 - "search_string" must be a normalized eBay search, e.g.
   sports: "2018 Panini Prizm Luka Doncic #280 Silver"
-  TCG:    "1999 Pokémon Base Set Charizard #4 Holo 1st Edition"
+  TCG:    "1999 Pokemon Base Set Charizard #4 Holo 1st Edition"
 - For TCG cards, put edition (1st Edition/Unlimited), holo/foil, language, and rarity in
   "variant" AND in "search_string" — these dominate TCG pricing.
 - Grade as a RANGE; half grades like 6.5 or 8.5 are allowed. A phone photo cannot distinguish
