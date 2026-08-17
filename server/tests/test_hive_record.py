@@ -112,6 +112,15 @@ def test_tags_keep_sportscards_for_sports():
 
 def test_every_category_has_game_tag():
     assert set(GAME_TAG) == set(get_args(CardCategory))
+    for tag in GAME_TAG.values():
+        assert re.fullmatch(r"[a-z][a-z0-9-]*", tag), tag
+
+
+def test_post_body_labels_sports_row_player():
+    ops = build_post(make_record(), community=COMMUNITY, account="app", permlink="p")
+    body = ops[0][1]["body"]
+    assert "| Player | Luka Doncic |" in body
+    assert "| Card |" not in body
 
 
 def test_post_body_labels_tcg_row_card():
