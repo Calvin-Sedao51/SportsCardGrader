@@ -1,7 +1,10 @@
+from typing import get_args
+
 import httpx
 import pytest
 
-from app.ebay import EbayClient
+from app.ebay import EBAY_CATEGORY, EbayClient
+from app.schemas import CardCategory
 
 
 def make_transport(token_calls: list | None = None, extra_items: list | None = None,
@@ -55,6 +58,18 @@ async def test_token_cached_across_searches():
     await client.search("first query")
     await client.search("second query")
     assert len(token_calls) == 1
+
+
+def test_every_category_except_other_has_ebay_mapping():
+    assert set(EBAY_CATEGORY) == set(get_args(CardCategory)) - {"other"}
+
+
+async def test_search_default_category_is_sports():
+    seen: list = []
+    client = EbayClient("id", "secret", "production",
+                        transport=make_transport(seen_params=seen))
+    await client.search("2018 Prizm Luka Doncic")
+    assert seen[0]["category_ids"] == "212"
 
 
 async def test_search_sports_uses_sports_category():

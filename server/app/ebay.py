@@ -13,7 +13,7 @@ _BASES = {"production": "https://api.ebay.com", "sandbox": "https://api.sandbox.
 # eBay Browse category ids. 212 = Sports Trading Cards; 183454 = CCG Individual
 # Cards (Pokémon, Yu-Gi-Oh!, MTG, One Piece all live here). "other" gets no
 # filter. Keep in sync with SACAT_BY_CATEGORY in web/src/screens/ResultsScreen.tsx.
-EBAY_CATEGORY: dict[str, str] = {
+EBAY_CATEGORY: dict[CardCategory, str] = {
     "sports": "212",
     "pokemon": "183454", "yugioh": "183454", "magic": "183454",
     "onepiece": "183454", "other_tcg": "183454",
