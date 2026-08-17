@@ -137,6 +137,8 @@ def test_refresh_comps_enqueues_an_update(client, records, hive, monkeypatch):
 
     async def fake_search(query, category="sports"):
         assert "Luka Doncic" in query
+        # The stored record's identity category must reach pricing.
+        assert category == "sports"
         return fresh
 
     monkeypatch.setattr(scan_module, "search_comps", fake_search)

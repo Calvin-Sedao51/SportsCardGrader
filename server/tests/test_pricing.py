@@ -50,6 +50,25 @@ def test_ebay_source_without_credentials_raises_not_configured():
         asyncio.run(source.search("luka"))
 
 
+def test_ebay_source_forwards_category_to_client():
+    """Pin the adapter -> EbayClient hop: dropping category=category there must
+    fail here, not just in end-to-end tests that fake the whole source."""
+    class StubClient:
+        def __init__(self):
+            self.seen: list[tuple[str, str]] = []
+
+        async def search(self, query: str, category: str = "sports"):
+            self.seen.append((query, category))
+            return []
+
+    source = get_pricing_source(Settings(_env_file=None, ebay_client_id="id",
+                                         ebay_client_secret="secret"))
+    stub = StubClient()
+    source._client = stub
+    asyncio.run(source.search("q", category="pokemon"))
+    assert stub.seen == [("q", "pokemon")]
+
+
 def test_sold_source_flows_through_scan_to_verdict(monkeypatch):
     """A custom sold source must surface as comps.source == 'sold' and produce
     verdict reasoning worded around sold prices — no pipeline edits needed."""

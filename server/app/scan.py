@@ -61,7 +61,7 @@ async def price_vision(vision, asking_price: Optional[float]):
         # a self-diagnosing comps_error instead of a 500.
         source_type = _get_pricing_source().source_type
         listings = await search_comps(vision.identity.search_string,
-                                      vision.identity.category)
+                                      category=vision.identity.category)
     except Exception as e:
         return None, None, [], str(e)
 
