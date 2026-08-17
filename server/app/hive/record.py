@@ -26,6 +26,10 @@ from app.schemas import (
 TOP_SALES_CAP = 10
 TITLE_CAP = 80
 
+GAME_TAG = {"sports": "sportscards", "pokemon": "pokemon", "yugioh": "yugioh",
+            "magic": "mtg", "onepiece": "onepiece",
+            "other_tcg": "tradingcards", "other": "tradingcards"}
+
 
 class CardComps(BaseModel):
     summary: CompsSummary
@@ -75,7 +79,7 @@ def build_tags(identity: Identity, community: str) -> list[str]:
     Derived tags are sc- prefixed so they always start with a letter and never
     collide with organic tags. Hive tags must match [a-z][a-z0-9-]*.
     """
-    tags = [community, "sportscards", "cardscanner"]
+    tags = [community, GAME_TAG[identity.category], "cardscanner"]
     for raw, cap in ((identity.subject, 32), (identity.year, 12), (identity.set_name, 24)):
         slug = slugify(raw or "", cap)
         if slug:

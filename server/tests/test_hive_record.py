@@ -1,8 +1,11 @@
 import json
 import re
 from pathlib import Path
+from typing import get_args
 
+from app.hive.post_builder import build_post
 from app.hive.record import (
+    GAME_TAG,
     Attribution,
     CardImages,
     CardRecord,
@@ -11,7 +14,14 @@ from app.hive.record import (
     from_scan_response,
     slugify,
 )
-from app.schemas import CompListing, CompsSummary, ScanResponse, VisionResult
+from app.schemas import (
+    CardCategory,
+    CompListing,
+    CompsSummary,
+    Identity,
+    ScanResponse,
+    VisionResult,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 COMMUNITY = "hive-192941"
@@ -84,3 +94,31 @@ def test_json_metadata_stays_small():
     # under the 8 KB envelope budget enforced by the post builder.
     payload = make_record().model_dump_json()
     assert len(payload) < 7000
+
+
+def test_tags_use_game_name_for_tcg():
+    identity = Identity(subject="Charizard", category="pokemon", year="1999",
+                        set_name="Base Set", search_string="x", confidence=0.9)
+    tags = build_tags(identity, COMMUNITY)
+    assert tags[0] == COMMUNITY
+    assert "pokemon" in tags and "sportscards" not in tags
+
+
+def test_tags_keep_sportscards_for_sports():
+    identity = Identity(subject="Luka Doncic", year="2018",
+                        set_name="Panini Prizm", search_string="x", confidence=0.9)
+    assert "sportscards" in build_tags(identity, COMMUNITY)
+
+
+def test_every_category_has_game_tag():
+    assert set(GAME_TAG) == set(get_args(CardCategory))
+
+
+def test_post_body_labels_tcg_row_card():
+    base = make_record()
+    record = make_record(identity=base.identity.model_copy(
+        update={"subject": "Charizard", "category": "pokemon"}))
+    ops = build_post(record, community=COMMUNITY, account="app", permlink="p")
+    body = ops[0][1]["body"]
+    assert "| Card | Charizard |" in body
+    assert "| Player |" not in body

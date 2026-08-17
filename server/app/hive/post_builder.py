@@ -50,8 +50,9 @@ def _body(record: CardRecord) -> str:
     lines = [f"![front]({record.images.front})", ""]
     if record.images.back:
         lines += [f"![back]({record.images.back})", ""]
+    subject_label = "Player" if identity.category == "sports" else "Card"
     lines += ["| | |", "|---|---|",
-              f"| Player | {identity.subject} |",
+              f"| {subject_label} | {identity.subject} |",
               f"| Year | {identity.year} |",
               f"| Set | {identity.set_name} |"]
     if identity.card_number:
