@@ -56,7 +56,7 @@ def test_sold_source_flows_through_scan_to_verdict(monkeypatch):
     class FakeSoldSource:
         source_type = "sold"
 
-        async def search(self, query: str) -> list[CompListing]:
+        async def search(self, query: str, category="sports") -> list[CompListing]:
             return [CompListing(title=f"Sold Luka {i}", price=40.0 + i, graded=False)
                     for i in range(3)]
 

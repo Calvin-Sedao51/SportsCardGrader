@@ -135,7 +135,7 @@ def test_refresh_comps_enqueues_an_update(client, records, hive, monkeypatch):
     fresh = [CompListing(title=f"fresh {i}", price=80.0 + i, graded=False)
              for i in range(3)]
 
-    async def fake_search(query):
+    async def fake_search(query, category="sports"):
         assert "Luka Doncic" in query
         return fresh
 

@@ -7,7 +7,10 @@ verdict wording and the web captions key off ``source_type``.
 To plug in your own provider (a sold-data service, or your own exports):
 
 1. Write a class with a ``source_type`` of ``"sold"`` or ``"active_listings"``
-   and an ``async def search(self, query: str) -> list[CompListing]``.
+   and an ``async def search(self, query: str,
+   category: CardCategory = "sports") -> list[CompListing]`` — ``category`` is
+   the ``CardCategory`` detected by vision (sports, pokemon, ...); use it to
+   scope provider results, or ignore it if your provider has no such notion.
    ``source_type`` must be one of those two literals — the verdict engine and
    the web UI only understand asks-vs-solds semantics. The constructor
    receives the app ``Settings``; read any provider credentials of your own
@@ -21,13 +24,14 @@ from typing import Literal, Optional, Protocol
 
 from app.config import Settings
 from app.ebay import EbayClient
-from app.schemas import CompListing
+from app.schemas import CardCategory, CompListing
 
 
 class PricingSource(Protocol):
     source_type: Literal["active_listings", "sold"]
 
-    async def search(self, query: str) -> list[CompListing]: ...
+    async def search(self, query: str,
+                     category: CardCategory = "sports") -> list[CompListing]: ...
 
 
 class EbayActiveSource:
@@ -39,7 +43,8 @@ class EbayActiveSource:
         self._settings = settings
         self._client: Optional[EbayClient] = None
 
-    async def search(self, query: str) -> list[CompListing]:
+    async def search(self, query: str,
+                     category: CardCategory = "sports") -> list[CompListing]:
         # Checked per-search, not at construction, so an unconfigured server
         # still boots and scans still return vision results + comps_error.
         if not self._settings.ebay_configured:
@@ -48,7 +53,7 @@ class EbayActiveSource:
             self._client = EbayClient(self._settings.ebay_client_id,
                                       self._settings.ebay_client_secret,
                                       self._settings.ebay_env)
-        return await self._client.search(query)
+        return await self._client.search(query, category=category)
 
 
 _REGISTRY: dict[str, type] = {"ebay_active": EbayActiveSource}

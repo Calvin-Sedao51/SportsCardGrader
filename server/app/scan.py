@@ -9,7 +9,7 @@ from typing import Optional
 from app.comps import matching_grade_summary, summarize
 from app.config import get_settings
 from app.pricing import PricingSource, get_pricing_source
-from app.schemas import CompListing, ScanResponse, VisionResult
+from app.schemas import CardCategory, CompListing, ScanResponse, VisionResult
 from app.verdict import decide, decide_slab
 from app.vision.providers import analyze_card
 
@@ -29,8 +29,8 @@ async def run_vision(front: bytes, front_type: str, back: Optional[tuple[bytes, 
                               api_key=api_key, model=model)
 
 
-async def search_comps(query: str) -> list[CompListing]:
-    return await _get_pricing_source().search(query)
+async def search_comps(query: str, category: CardCategory = "sports") -> list[CompListing]:
+    return await _get_pricing_source().search(query, category=category)
 
 
 async def perform_scan(front: bytes, front_type: str, back: Optional[tuple[bytes, str]],
@@ -60,7 +60,8 @@ async def price_vision(vision, asking_price: Optional[float]):
         # Resolved inside the try so a misconfigured PRICING_SOURCE degrades to
         # a self-diagnosing comps_error instead of a 500.
         source_type = _get_pricing_source().source_type
-        listings = await search_comps(vision.identity.search_string)
+        listings = await search_comps(vision.identity.search_string,
+                                      vision.identity.category)
     except Exception as e:
         return None, None, [], str(e)
 
