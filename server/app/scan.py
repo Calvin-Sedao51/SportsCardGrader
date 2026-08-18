@@ -65,13 +65,17 @@ async def price_vision(vision, asking_price: Optional[float]):
     except Exception as e:
         return None, None, [], str(e)
 
+    # The query rides along so junk tokens that are part of the card's name
+    # ("Greninja BREAK") are exempt from the junk filter.
+    query = vision.identity.search_string
     if vision.slab is not None:
         # Slab path: the search string already carries company+grade (per the
         # vision prompt), so the listings skew toward same-grade slabs. Price
         # from same-grade comps when there are enough, else all graded comps.
-        overall = summarize(listings, source=source_type)
+        overall = summarize(listings, source=source_type, query=query)
         matching = matching_grade_summary(listings, vision.slab.company,
-                                          vision.slab.grade, source=source_type)
+                                          vision.slab.grade, source=source_type,
+                                          query=query)
         verdict = decide_slab(matching, overall, vision.slab, asking_price,
                               vision.identity.confidence,
                               authenticity=vision.authenticity)
@@ -79,7 +83,7 @@ async def price_vision(vision, asking_price: Optional[float]):
         comps = matching if matching is not None else overall
         return comps, verdict, listings, None
 
-    comps = summarize(listings, source=source_type)
+    comps = summarize(listings, source=source_type, query=query)
     verdict = decide(comps, vision.condition, asking_price, vision.identity.confidence,
                      authenticity=vision.authenticity)
     return comps, verdict, listings, None
