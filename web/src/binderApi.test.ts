@@ -16,7 +16,7 @@ import type { ScanResponse } from './types'
 const RESPONSE: ScanResponse = {
   vision: {
     photo_ok: true, photo_issue: null,
-    identity: { player: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
+    identity: { subject: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
                 card_number: '280', variant: null,
                 search_string: '2018 Panini Prizm Luka Doncic #280', confidence: 0.92 },
     condition: { observations: [], grade_low: 6, grade_high: 8 },
@@ -59,7 +59,7 @@ test('publishCard posts multipart record + images and returns the job', async ()
   expect(record).toMatchObject({
     v: 1, kind: 'card', record_id: 'rec-1', asking_price: 55,
     scanned_at: '2026-08-16T12:00:00Z',
-    identity: { player: 'Luka Doncic' },
+    identity: { subject: 'Luka Doncic' },
     comps: { summary: { raw_median: 47 }, top_sales: [] },
   })
   expect(record.attribution.client_id).toMatch(/[0-9a-f-]{36}/)

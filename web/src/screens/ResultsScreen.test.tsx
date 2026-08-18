@@ -6,8 +6,8 @@ import type { ScanResponse } from '../types'
 const base: ScanResponse = {
   vision: {
     photo_ok: true, photo_issue: null,
-    identity: { player: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
-                card_number: '280', variant: null,
+    identity: { subject: 'Luka Doncic', category: 'sports', year: '2018',
+                set_name: 'Panini Prizm', card_number: '280', variant: null,
                 search_string: '2018 Panini Prizm Luka Doncic #280', confidence: 0.92 },
     condition: { observations: [], grade_low: 6, grade_high: 8 },
     authenticity: { red_flags: [], risk: 'low' }, ai_value_note: null,
@@ -73,6 +73,16 @@ test('sold-comps link targets an eBay sold search with the encoded search string
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   // Asks-vs-solds distinction is explained when the estimate comes from asks.
   expect(screen.getByText(/what buyers actually paid/i)).toBeTruthy()
+})
+
+test('links sold comps to the CCG category for TCG cards', () => {
+  const r = structuredClone(base)
+  r.vision.identity!.category = 'pokemon'
+  r.vision.identity!.subject = 'Charizard'
+  r.vision.identity!.search_string = '1999 Pokemon Base Set Charizard #4 Holo 1st Edition'
+  render(<ResultsScreen result={r} onRescan={() => {}} />)
+  const link = screen.getByRole('link', { name: /sold comps/i })
+  expect(link.getAttribute('href')).toContain('_sacat=183454')
 })
 
 test('sold-comps link still offered when comps failed', () => {

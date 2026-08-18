@@ -26,7 +26,7 @@ function toScanResponse(card: CardRecord): ScanResponse {
 }
 
 function matches(card: CardRecord, query: string): boolean {
-  const haystack = [card.identity.player, card.identity.set_name, card.identity.year]
+  const haystack = [card.identity.subject, card.identity.set_name, card.identity.year]
     .join(' ').toLowerCase()
   return haystack.includes(query.toLowerCase())
 }
@@ -91,7 +91,7 @@ export default function BinderScreen() {
     <div className="screen">
       <input
         type="search"
-        placeholder="Search player, set, year…"
+        placeholder="Search card, set, year…"
         value={query}
         onChange={e => setQuery(e.target.value)}
         aria-label="Search The Binder"
@@ -105,7 +105,7 @@ export default function BinderScreen() {
           <li key={`${item.author}/${item.permlink}`}>
             <button className="history-row" onClick={() => setDetail(item)}>
               <span className="player">
-                {item.card.identity.player}
+                {item.card.identity.subject}
                 {item.card.slab ? ` · ${item.card.slab.company} ${item.card.slab.grade}` : ''}
               </span>
               <span className="date">

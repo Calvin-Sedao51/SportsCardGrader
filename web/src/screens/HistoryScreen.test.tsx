@@ -29,7 +29,7 @@ beforeEach(async () => {
 const response: ScanResponse = {
   vision: {
     photo_ok: true, photo_issue: null,
-    identity: { player: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
+    identity: { subject: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
                 card_number: '280', variant: null,
                 search_string: '2018 Panini Prizm Luka Doncic #280', confidence: 0.92 },
     condition: { observations: [], grade_low: 6, grade_high: 8 },

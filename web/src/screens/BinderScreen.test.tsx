@@ -14,7 +14,7 @@ vi.mock('../binderApi', async importOriginal => ({
 function card(player: string, year = '2018'): CardRecord {
   return {
     v: 1, kind: 'card', record_id: `rec-${player}`,
-    identity: { player, year, set_name: 'Panini Prizm', card_number: '280',
+    identity: { subject: player, year, set_name: 'Panini Prizm', card_number: '280',
                 variant: null, search_string: `${year} ${player}`, confidence: 0.9 },
     condition: { observations: [], grade_low: 6, grade_high: 8 },
     slab: null, authenticity: { red_flags: [], risk: 'low' },
