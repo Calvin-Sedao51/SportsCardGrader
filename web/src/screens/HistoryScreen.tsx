@@ -79,11 +79,7 @@ export default function HistoryScreen({ onSelect }: Props) {
             <li key={card.record_id}>
               <button className="history-row" onClick={() => onSelect(card)}>
                 <span className="player">
-                  {/* The `player` fallback reads pre-rename IndexedDB entries staged
-                      before Identity.subject existed. */}
-                  {card.response.vision.identity?.subject ??
-                    (card.response.vision.identity as { player?: string } | null)?.player ??
-                    'Unreadable photo'}
+                  {card.response.vision.identity?.subject ?? 'Unreadable photo'}
                   {slab ? ` · ${slab.company} ${slab.grade}` : ''}
                 </span>
                 <span className="date">{new Date(card.at).toLocaleDateString()}</span>

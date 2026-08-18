@@ -77,6 +77,25 @@ test('prune drops oldest drafts only, never published cards', async () => {
   expect(await getImages(oldest.record_id)).toBeNull() // images pruned too
 })
 
+test('listStaged migrates legacy player identities to subject in memory', async () => {
+  // Entries staged before the Identity.player -> subject rename.
+  const legacy = {
+    vision: {
+      photo_ok: true, photo_issue: null,
+      identity: { player: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
+                  card_number: '280', variant: null,
+                  search_string: '2018 Panini Prizm Luka Doncic #280', confidence: 0.92 },
+      condition: null, authenticity: null, ai_value_note: null,
+    },
+    comps: null, comps_error: null, verdict: null,
+  } as unknown as ScanResponse
+  await stageScan(legacy, null, blob('f'), null)
+  const identity = (await listStaged())[0].response.vision.identity!
+  expect(identity.subject).toBe('Luka Doncic')
+  expect('player' in identity).toBe(false)
+  expect(identity.year).toBe('2018') // rest of the identity is untouched
+})
+
 test('clientId is stable across calls', () => {
   const id = clientId()
   expect(id).toMatch(/[0-9a-f-]{36}/)

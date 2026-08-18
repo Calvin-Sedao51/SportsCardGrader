@@ -85,6 +85,23 @@ test('links sold comps to the CCG category for TCG cards', () => {
   expect(link.getAttribute('href')).toContain('_sacat=183454')
 })
 
+test('sold-comps link has no category filter for "other" cards', () => {
+  const r = structuredClone(base)
+  r.vision.identity!.category = 'other'
+  render(<ResultsScreen result={r} onRescan={() => {}} />)
+  const link = screen.getByRole('link', { name: /sold comps/i })
+  expect(link.getAttribute('href')).not.toContain('_sacat')
+})
+
+test('sold-comps link defaults to the sports category when category is absent', () => {
+  // Staged scans from before Identity.category existed.
+  const r = structuredClone(base)
+  delete r.vision.identity!.category
+  render(<ResultsScreen result={r} onRescan={() => {}} />)
+  const link = screen.getByRole('link', { name: /sold comps/i })
+  expect(link.getAttribute('href')).toContain('_sacat=212')
+})
+
 test('sold-comps link still offered when comps failed', () => {
   const r = { ...base, comps: null, verdict: null, comps_error: 'eBay down' }
   render(<ResultsScreen result={r} onRescan={() => {}} />)
