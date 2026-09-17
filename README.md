@@ -3,9 +3,9 @@
 [![CI](https://img.shields.io/badge/CI-GitHub_Actions-blue)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Point your phone at a sports card and get an answer: what it is, what shape it's in, and whether the price is right.
+Point your phone at a trading card — sports or TCG (Pokémon, Yu-Gi-Oh!, Magic, One Piece) — and get an answer: what it is, what shape it's in, and whether the price is right.
 
-- **Identity** — player, year, set, card number, parallel/variation.
+- **Identity** — player or character, year, set, card number, parallel/variation.
 - **Grade range** — a realistic condition estimate (e.g. "PSA 6–8") from your photo.
 - **Authenticity red flags** — warning signs like print pattern anomalies or trimmed edges.
 - **Verdict** — priced against live eBay comps: **undervalued**, **fair**, or **overpriced**.

@@ -9,7 +9,7 @@ from typing import Optional
 from app.comps import matching_grade_summary, summarize
 from app.config import get_settings
 from app.pricing import PricingSource, get_pricing_source
-from app.schemas import CompListing, ScanResponse, VisionResult
+from app.schemas import CardCategory, CompListing, ScanResponse, VisionResult
 from app.verdict import decide, decide_slab
 from app.vision.providers import analyze_card
 
@@ -29,8 +29,8 @@ async def run_vision(front: bytes, front_type: str, back: Optional[tuple[bytes, 
                               api_key=api_key, model=model)
 
 
-async def search_comps(query: str) -> list[CompListing]:
-    return await _get_pricing_source().search(query)
+async def search_comps(query: str, category: CardCategory = "sports") -> list[CompListing]:
+    return await _get_pricing_source().search(query, category=category)
 
 
 async def perform_scan(front: bytes, front_type: str, back: Optional[tuple[bytes, str]],
@@ -60,17 +60,22 @@ async def price_vision(vision, asking_price: Optional[float]):
         # Resolved inside the try so a misconfigured PRICING_SOURCE degrades to
         # a self-diagnosing comps_error instead of a 500.
         source_type = _get_pricing_source().source_type
-        listings = await search_comps(vision.identity.search_string)
+        listings = await search_comps(vision.identity.search_string,
+                                      category=vision.identity.category)
     except Exception as e:
         return None, None, [], str(e)
 
+    # The query rides along so junk tokens that are part of the card's name
+    # ("Greninja BREAK") are exempt from the junk filter.
+    query = vision.identity.search_string
     if vision.slab is not None:
         # Slab path: the search string already carries company+grade (per the
         # vision prompt), so the listings skew toward same-grade slabs. Price
         # from same-grade comps when there are enough, else all graded comps.
-        overall = summarize(listings, source=source_type)
+        overall = summarize(listings, source=source_type, query=query)
         matching = matching_grade_summary(listings, vision.slab.company,
-                                          vision.slab.grade, source=source_type)
+                                          vision.slab.grade, source=source_type,
+                                          query=query)
         verdict = decide_slab(matching, overall, vision.slab, asking_price,
                               vision.identity.confidence,
                               authenticity=vision.authenticity)
@@ -78,7 +83,7 @@ async def price_vision(vision, asking_price: Optional[float]):
         comps = matching if matching is not None else overall
         return comps, verdict, listings, None
 
-    comps = summarize(listings, source=source_type)
+    comps = summarize(listings, source=source_type, query=query)
     verdict = decide(comps, vision.condition, asking_price, vision.identity.confidence,
                      authenticity=vision.authenticity)
     return comps, verdict, listings, None

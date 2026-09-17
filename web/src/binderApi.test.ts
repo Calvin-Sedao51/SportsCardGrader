@@ -16,7 +16,7 @@ import type { ScanResponse } from './types'
 const RESPONSE: ScanResponse = {
   vision: {
     photo_ok: true, photo_issue: null,
-    identity: { player: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
+    identity: { subject: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
                 card_number: '280', variant: null,
                 search_string: '2018 Panini Prizm Luka Doncic #280', confidence: 0.92 },
     condition: { observations: [], grade_low: 6, grade_high: 8 },
@@ -59,7 +59,7 @@ test('publishCard posts multipart record + images and returns the job', async ()
   expect(record).toMatchObject({
     v: 1, kind: 'card', record_id: 'rec-1', asking_price: 55,
     scanned_at: '2026-08-16T12:00:00Z',
-    identity: { player: 'Luka Doncic' },
+    identity: { subject: 'Luka Doncic' },
     comps: { summary: { raw_median: 47 }, top_sales: [] },
   })
   expect(record.attribution.client_id).toMatch(/[0-9a-f-]{36}/)
@@ -115,4 +115,55 @@ test('resumePendingPublishes leaves drafts pending when still offline', async ()
   const [after] = await listStaged()
   expect(after.status).toBe('draft')
   expect(after.publishRequested).toBe(true)
+})
+
+// -- identity ---------------------------------------------------------------
+
+test('toDraft carries the signed-in collector handle; anonymous drafts carry none', async () => {
+  const { toDraft } = await import('./binderApi')
+  const anon = toDraft(STAGED)
+  expect(anon.attribution.hive_display_key ?? null).toBeNull()
+  expect(anon.attribution.user_id ?? null).toBeNull()
+  const mine = toDraft(STAGED, { id: 'u1', email: null, display_name: 'Calvin',
+                                 hive_display_key: 'binder-abcdef12', created_at: '' })
+  expect(mine.attribution).toMatchObject({ user_id: 'u1', hive_display_key: 'binder-abcdef12',
+                                           display_name: 'Calvin' })
+  expect(mine.attribution.client_id).toBe(anon.attribution.client_id)
+})
+
+test('publishCard sends the app token as a Bearer header when signed in, nothing when not', async () => {
+  const { saveSession, clearSession } = await import('./auth/session')
+  const mock = mockFetch(JOB)
+  await publishCard(STAGED, new Blob(['f']), null)
+  expect((mock.mock.calls[0][1]!.headers as Record<string, string> | undefined)?.Authorization)
+    .toBeUndefined()
+  saveSession({ token: 'app.jwt', user: { id: 'u1', email: null, display_name: 'Calvin',
+                                           hive_display_key: 'binder-abcdef12', created_at: '' } })
+  await publishCard(STAGED, new Blob(['f']), null)
+  expect((mock.mock.calls[1][1]!.headers as Record<string, string>).Authorization).toBe('Bearer app.jwt')
+  const record = JSON.parse((mock.mock.calls[1][1]!.body as FormData).get('record') as string)
+  expect(record.attribution.hive_display_key).toBe('binder-abcdef12')
+  clearSession()
+})
+
+test('listBinder passes owner= for My Collection', async () => {
+  const mock = mockFetch({ cards: [], next: null })
+  await listBinder(undefined, 'binder-abcdef12')
+  expect(String(mock.mock.calls[0][0])).toContain('owner=binder-abcdef12')
+  await listBinder({ start_author: 'thebinder', start_permlink: 'p' }, 'binder-abcdef12')
+  expect(String(mock.mock.calls[1][0])).toMatch(/start_permlink=p.*owner=binder-abcdef12|owner=binder-abcdef12.*start_permlink=p/)
+  await listBinder()
+  expect(String(mock.mock.calls[2][0])).not.toContain('owner=')
+})
+
+test('a feed entry attribution round-trips into the My Collection filter', async () => {
+  const { isMine } = await import('./auth/collection')
+  const entry = { permlink: 'p', author: 'thebinder', created: null,
+                  card: { ...JSON.parse(JSON.stringify(STAGED)), images: { front: 'x', back: null } },
+                  attribution: { client_id: 'c', display_name: 'Calvin', user_id: 'u1',
+                                 hive_display_key: 'binder-abcdef12' } }
+  mockFetch({ cards: [entry], next: null })
+  const page = await listBinder(undefined, 'binder-abcdef12')
+  expect(isMine(page.cards[0], 'binder-abcdef12')).toBe(true)
+  expect(isMine(page.cards[0], 'binder-someone')).toBe(false)
 })

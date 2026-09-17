@@ -78,3 +78,4 @@ The community feed is the app's storage backend — there is no database.
 | `HIVE_ROOT_POST_INTERVAL_SECONDS` | `305` | spacing between root posts |
 | `HIVE_MIN_RC_PERCENT` | `5.0` | park the queue below this RC |
 | `IMAGES_3SPEAK_TOKEN` | — | optional image-host fallback |
+| `HIVE_ACCOUNT_MODE` | `shared` | identity model; `per_user` is a dormant shim (see `docs/plans/2026-09-16-binder-identity-v1.md`) |

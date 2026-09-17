@@ -13,7 +13,7 @@ from app.schemas import (Authenticity, CompListing, Condition, Identity,
 
 GOOD_VISION = VisionResult(
     photo_ok=True,
-    identity=Identity(player="Luka Doncic", year="2018", set_name="Panini Prizm",
+    identity=Identity(subject="Luka Doncic", year="2018", set_name="Panini Prizm",
                       card_number="280", search_string="2018 Panini Prizm Luka Doncic #280",
                       confidence=0.92),
     condition=Condition(observations=[], grade_low=6, grade_high=8),
@@ -50,13 +50,32 @@ def test_ebay_source_without_credentials_raises_not_configured():
         asyncio.run(source.search("luka"))
 
 
+def test_ebay_source_forwards_category_to_client():
+    """Pin the adapter -> EbayClient hop: dropping category=category there must
+    fail here, not just in end-to-end tests that fake the whole source."""
+    class StubClient:
+        def __init__(self):
+            self.seen: list[tuple[str, str]] = []
+
+        async def search(self, query: str, category: str = "sports"):
+            self.seen.append((query, category))
+            return []
+
+    source = get_pricing_source(Settings(_env_file=None, ebay_client_id="id",
+                                         ebay_client_secret="secret"))
+    stub = StubClient()
+    source._client = stub
+    asyncio.run(source.search("q", category="pokemon"))
+    assert stub.seen == [("q", "pokemon")]
+
+
 def test_sold_source_flows_through_scan_to_verdict(monkeypatch):
     """A custom sold source must surface as comps.source == 'sold' and produce
     verdict reasoning worded around sold prices — no pipeline edits needed."""
     class FakeSoldSource:
         source_type = "sold"
 
-        async def search(self, query: str) -> list[CompListing]:
+        async def search(self, query: str, category="sports") -> list[CompListing]:
             return [CompListing(title=f"Sold Luka {i}", price=40.0 + i, graded=False)
                     for i in range(3)]
 

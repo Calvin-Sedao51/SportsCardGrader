@@ -86,6 +86,35 @@ def test_summarize_drops_junk_from_both_buckets():
     assert (s.raw_count, s.raw_low, s.raw_median) == (3, 40, 60)
     assert (s.graded_count, s.graded_low) == (2, 150)
 
+def test_is_junk_exempts_tokens_present_in_query():
+    # A junk token the vision model put in the search string is part of the
+    # card's NAME — "Greninja BREAK", "Digital Bug" — not a junk signal.
+    assert not is_junk("Greninja BREAK Holo #41",
+                       query="XY BREAKpoint Greninja BREAK #41")
+    assert not is_junk("Digital Bug Cocoon LED3",
+                       query="Yu-Gi-Oh Digital Bug Cocoon LED3-EN020")
+    # A token absent from the query still junks — ordinary scans keep filtering.
+    assert is_junk("Luka Doncic case break", query="2018 Prizm Luka Doncic")
+    # Exemption is per-token: an exempt name token never launders other junk.
+    assert is_junk("Greninja BREAK lot of 10",
+                   query="XY BREAKpoint Greninja BREAK #41")
+
+def test_summarize_passes_query_to_junk_filter():
+    listings = [L("Greninja BREAK Holo #41", 20), L("Greninja BREAK NM", 30),
+                L("Greninja BREAK XY", 40)]
+    assert summarize(listings, source="active_listings").raw_count == 0
+    s = summarize(listings, source="active_listings",
+                  query="XY BREAKpoint Greninja BREAK #41")
+    assert s.raw_count == 3 and s.raw_low == 20
+
+def test_matching_grade_summary_passes_query_to_junk_filter():
+    listings = [L(f"Greninja BREAK PSA 10 #{i}", 100 + i) for i in range(3)]
+    assert matching_grade_summary(listings, "PSA", "10",
+                                  source="active_listings") is None
+    s = matching_grade_summary(listings, "PSA", "10", source="active_listings",
+                               query="Greninja BREAK #41 PSA 10")
+    assert s is not None and s.graded_count == 3
+
 def test_summarize_keeps_lottery_title_raw():
     listings = [L("Zach LaVine Lottery Pick insert", 20),
                 L("Zach LaVine base", 30), L("Zach LaVine RC", 40)]

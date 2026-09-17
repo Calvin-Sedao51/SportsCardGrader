@@ -26,6 +26,10 @@ export interface CardImages {
 export interface Attribution {
   client_id: string // anonymous per-install UUID; never an identity claim
   display_name: string | null
+  // Signed-in identity, stamped by the SERVER from the app token (anything
+  // the client puts here is overwritten). Absent/null = anonymous scan.
+  user_id?: string | null
+  hive_display_key?: string | null // public collector handle 'binder-<8 hex>'
 }
 
 export interface CardRecord {
@@ -68,6 +72,7 @@ export interface StagedCard {
   job_id?: string
   error?: string
   legacy?: boolean // migrated from localStorage — has no images, can't publish
+  user_id?: string // attached by "sync my scans" after sign-in
 }
 
 export interface PublishJobStatus {
@@ -82,9 +87,10 @@ export interface PublishJobStatus {
 
 export interface BinderCard {
   permlink: string
-  author: string
+  author: string // always the shared app account — see attribution for the collector
   created: string | null
   card: CardRecord
+  attribution?: Attribution // top-level copy the server extracts from the post
   hive_url?: string
 }
 
