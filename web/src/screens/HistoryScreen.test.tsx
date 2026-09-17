@@ -120,3 +120,58 @@ test('poller promotes queued cards when the server confirms', async () => {
   await waitFor(async () =>
     expect((await listStaged())[0].status).toBe('published'))
 })
+
+// -- identity: sync my scans after sign-in ----------------------------------
+
+const auth = vi.hoisted(() => ({ useAuth: vi.fn() }))
+vi.mock('../auth/useAuth', () => ({ useAuth: auth.useAuth }))
+
+const ME = { id: 'u1', email: null, display_name: 'Calvin', hive_display_key: 'binder-abcdef12',
+             created_at: '' }
+
+beforeEach(() => {
+  auth.useAuth.mockReturnValue({ status: 'signed_out', user: null, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
+})
+
+test('signed out: no sync button', async () => {
+  await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  await screen.findByText(/Luka Doncic/)
+  expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
+})
+
+test('signed in: sync attaches my user id to every draft and publishes after one consent', async () => {
+  auth.useAuth.mockReturnValue({ status: 'signed_in', user: ME, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
+  const a = await stageScan(response, null, blob('a'), null)
+  const b = await stageScan(response, 20, blob('b'), null)
+  mocks.publishCard.mockImplementation(async (card: { record_id: string }) => ({
+    job_id: card.record_id, permlink: `card-${card.record_id}`, status: 'queued',
+    position: 1, eta_seconds: 0, hive_url: null, last_error: null }))
+  render(<HistoryScreen onSelect={() => {}} />)
+  fireEvent.click(await screen.findByRole('button', { name: /sync my scans/i }))
+  const dialog = await screen.findByRole('dialog', { name: /sync/i })
+  expect(dialog.textContent).toMatch(/2 scans/i)
+  expect(dialog.textContent).toMatch(/public/i)
+  expect(mocks.publishCard).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: /^sync and publish$/i }))
+  await waitFor(() => expect(mocks.publishCard).toHaveBeenCalledTimes(2))
+  await waitFor(async () => {
+    const staged = await listStaged()
+    expect(staged.map(s => s.status)).toEqual(['queued', 'queued'])
+    expect(staged.map(s => s.user_id)).toEqual(['u1', 'u1'])
+  })
+  expect(new Set([a.record_id, b.record_id]).size).toBe(2)
+  await waitFor(() => expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull())
+})
+
+test('signed in with nothing publishable: no sync button', async () => {
+  auth.useAuth.mockReturnValue({ status: 'signed_in', user: ME, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
+  const card = await stageScan(response, null, blob(), null)
+  await setStatus(card.record_id, { status: 'published', hive_url: 'https://peakd.com/@x/y' })
+  render(<HistoryScreen onSelect={() => {}} />)
+  await screen.findByText(/Luka Doncic/)
+  expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
+})
