@@ -167,17 +167,15 @@ def test_signed_in_publish_is_stamped_from_the_user_store(client):
     assert job.record.attribution.client_id == "c1"  # install id still kept
 
 
-def test_anonymous_publish_strips_client_claimed_identity(client):
-    # No token: whatever identity the client typed into the draft is dropped.
+def test_anonymous_publish_is_rejected_even_with_forged_attribution(client):
+    # No token: publish is rejected outright, regardless of whatever identity
+    # the client typed into the draft — a forged block must never win.
     draft = json.loads(draft_json("new-rec"))
     draft["attribution"] = {"client_id": "c1", "display_name": "Impostor",
                             "user_id": UID, "hive_display_key": KEY}
     resp = post_publish(client, record=json.dumps(draft))
-    assert resp.status_code == 202
-    job = app.state.hive.queue.get_job("new-rec")
-    assert job.user_id is None
-    assert job.record.attribution.user_id is None
-    assert job.record.attribution.hive_display_key is None
+    assert resp.status_code == 401
+    assert app.state.hive.queue.get_job("new-rec") is None
 
 
 def test_bad_token_publish_is_401_not_silently_anonymous(client):

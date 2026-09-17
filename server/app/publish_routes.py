@@ -5,9 +5,10 @@ configured the app still runs fully — these endpoints just answer 503.
 """
 import logging
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Annotated, Optional
+from typing import Annotated, Callable, Optional
 
 import httpx
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -15,7 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app import scan as scan_module
-from app.auth_routes import optional_user
+from app.auth_routes import require_user
 from app.hive.client import HiveClient
 from app.hive.images import ImageInvalid, ImageUploadError, upload_image
 from app.hive.queue import PublishJob, PublishQueue
@@ -37,6 +38,41 @@ router = APIRouter()
 
 FEED_CACHE_TTL_SECONDS = 60.0
 
+PUBLISH_RATE_WINDOW_SECONDS = 3600.0
+DEFAULT_PUBLISH_RATE_BUDGET = 50
+
+
+class PublishRateLimiter:
+    """Per-user sliding-window budget on new publish jobs.
+
+    Each accepted publish burns the shared Hive account's Resource Credits
+    and a slot in the ~1-per-5-min root post chain, so one signed-in account
+    (compromised key, runaway script) must not be able to exhaust it. State
+    is a plain in-memory dict — fine at this scale, same tradeoff as
+    PublishQueue/UserStore — and lives on HiveState so tests can swap in a
+    fresh limiter the same way they swap `dry_run`.
+    """
+
+    def __init__(self, *, max_per_window: int = DEFAULT_PUBLISH_RATE_BUDGET,
+                window_seconds: float = PUBLISH_RATE_WINDOW_SECONDS,
+                clock: Callable[[], float] = time.monotonic):
+        self.max_per_window = max_per_window
+        self.window_seconds = window_seconds
+        self.clock = clock
+        self._hits: dict[str, deque] = {}
+
+    def allow(self, user_id: str) -> bool:
+        """True and records a hit iff `user_id` is under budget right now."""
+        now = self.clock()
+        hits = self._hits.setdefault(user_id, deque())
+        cutoff = now - self.window_seconds
+        while hits and hits[0] <= cutoff:
+            hits.popleft()
+        if len(hits) >= self.max_per_window:
+            return False
+        hits.append(now)
+        return True
+
 
 @dataclass
 class HiveState:
@@ -50,6 +86,7 @@ class HiveState:
     # Feed cache: cursor key -> (expires_monotonic, payload). Cleared when the
     # queue confirms a publish so a fresh card shows on the next refresh.
     feed_cache: dict = field(default_factory=dict)
+    rate_limiter: PublishRateLimiter = field(default_factory=PublishRateLimiter)
 
 
 def _state(request: Request) -> HiveState:
@@ -79,23 +116,29 @@ async def publish(
     back: Annotated[Optional[UploadFile], File()] = None,
 ):
     state = _state(request)
-    user = optional_user(request)  # 401 on a bad token; None when signed out
+    # Anonymous publish would let anyone on the internet burn the shared
+    # Hive account's chain; only a signed-in user may create a job.
+    user = require_user(request, message="Sign in to publish to the community.")
     try:
         draft = CardRecordDraft.model_validate_json(record)
     except ValidationError as exc:
         raise HTTPException(422, f"Invalid card record: {exc.errors()[0]['msg']}")
     # Identity comes from the token, never from the client's draft.
     draft.attribution = draft.attribution.model_copy(update={
-        "user_id": user.id if user else None,
-        "hive_display_key": user.hive_display_key if user else None,
-        "display_name": user.display_name if user else None,
+        "user_id": user.id,
+        "hive_display_key": user.hive_display_key,
+        "display_name": user.display_name,
     })
 
     existing = state.queue.get_job(draft.record_id)
     if existing is not None:
-        # Idempotent re-submit (offline retry, double tap): same job back.
+        # Idempotent re-submit (offline retry, double tap): same job back,
+        # no new chain post, so it doesn't count against the rate budget.
         return JSONResponse(status_code=200,
                             content=_job_payload(existing, state.queue))
+
+    if not state.rate_limiter.allow(user.id):
+        raise HTTPException(429, "You've hit the hourly publish limit. Try again later.")
 
     async def _upload(upload: UploadFile) -> str:
         if state.dry_run:
@@ -114,7 +157,7 @@ async def publish(
     images = CardImages(front=await _upload(front),
                         back=await _upload(back) if back is not None else None)
     full = CardRecord(**draft.model_dump(), images=images)
-    job = state.queue.enqueue(full, user_id=user.id if user else None)
+    job = state.queue.enqueue(full, user_id=user.id)
     return _job_payload(job, state.queue)
 
 

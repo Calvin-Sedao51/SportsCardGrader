@@ -65,10 +65,10 @@ def optional_user(request: Request) -> Optional[User]:
     return user
 
 
-def require_user(request: Request) -> User:
+def require_user(request: Request, *, message: str = "Sign in to do that.") -> User:
     user = optional_user(request)
     if user is None:
-        raise HTTPException(401, "Sign in to do that.")
+        raise HTTPException(401, message)
     return user
 
 

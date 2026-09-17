@@ -13,7 +13,7 @@ from app.auth_routes import AuthState, router as auth_router
 from app.config import get_settings
 from app.hive.client import HiveClient
 from app.hive.queue import PublishQueue
-from app.publish_routes import HiveState, router as publish_router
+from app.publish_routes import HiveState, PublishRateLimiter, router as publish_router
 from app.hive.identity import HIVE_ACCOUNT_MODES
 from app.schemas import ScanResponse
 from app.users import UserStore
@@ -52,7 +52,8 @@ async def lifespan(app: FastAPI):
             http=httpx.AsyncClient(timeout=30.0),
             posting_key=settings.hive_posting_key,
             fallback_token=settings.images_3speak_token,
-            dry_run=settings.hive_dry_run)
+            dry_run=settings.hive_dry_run,
+            rate_limiter=PublishRateLimiter(max_per_window=settings.publish_rate_budget))
         # A freshly confirmed card must show on the next Binder refresh.
         queue.on_confirmed = lambda _job: app.state.hive.feed_cache.clear()
         worker = asyncio.create_task(queue.run_forever(stop))

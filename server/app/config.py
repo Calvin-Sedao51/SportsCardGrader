@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     auth_jwt_secret: str = ""  # HS256 secret for app tokens; never logged
     auth_users_file: str = "data/users.json"
 
+    # Per-user publish budget (app/publish_routes.py): caps how many jobs one
+    # signed-in account can enqueue per rolling hour, so a compromised/bot
+    # account can't burn the whole shared Hive posting chain.
+    publish_rate_budget: int = 50
+
     model_config = {"env_file": ".env"}
 
     @property
