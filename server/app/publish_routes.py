@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app import scan as scan_module
+from app.auth_routes import optional_user
 from app.hive.client import HiveClient
 from app.hive.images import ImageInvalid, ImageUploadError, upload_image
 from app.hive.queue import PublishJob, PublishQueue
@@ -25,6 +26,7 @@ from app.hive.record import (
     CardImages,
     CardRecord,
     CardRecordDraft,
+    attribution_from_post,
 )
 from app.schemas import VisionResult
 
@@ -77,10 +79,17 @@ async def publish(
     back: Annotated[Optional[UploadFile], File()] = None,
 ):
     state = _state(request)
+    user = optional_user(request)  # 401 on a bad token; None when signed out
     try:
         draft = CardRecordDraft.model_validate_json(record)
     except ValidationError as exc:
         raise HTTPException(422, f"Invalid card record: {exc.errors()[0]['msg']}")
+    # Identity comes from the token, never from the client's draft.
+    draft.attribution = draft.attribution.model_copy(update={
+        "user_id": user.id if user else None,
+        "hive_display_key": user.hive_display_key if user else None,
+        "display_name": user.display_name if user else None,
+    })
 
     existing = state.queue.get_job(draft.record_id)
     if existing is not None:
@@ -105,7 +114,7 @@ async def publish(
     images = CardImages(front=await _upload(front),
                         back=await _upload(back) if back is not None else None)
     full = CardRecord(**draft.model_dump(), images=images)
-    job = state.queue.enqueue(full)
+    job = state.queue.enqueue(full, user_id=user.id if user else None)
     return _job_payload(job, state.queue)
 
 
@@ -133,15 +142,21 @@ def _parse_card_post(post: dict) -> Optional[dict]:
         return None
     if card.v != 1:
         return None
+    attribution = attribution_from_post(post) or card.attribution
     return {"permlink": post["permlink"], "author": post["author"],
-            "created": post.get("created"), "card": card.model_dump(mode="json")}
+            "created": post.get("created"), "card": card.model_dump(mode="json"),
+            "attribution": attribution.model_dump(mode="json")}
 
 
 @router.get("/api/cards")
 async def list_cards(request: Request, limit: int = 20, start_author: str = "",
-                     start_permlink: str = "", all_authors: bool = False):
+                     start_permlink: str = "", all_authors: bool = False,
+                     owner: str = ""):
+    """The community feed; `owner=<hive_display_key>` narrows it to one
+    collector's cards ("My Collection") — same feed, filtered server-side so
+    paging over a busy community doesn't hide a user's older cards."""
     state = _state(request)
-    key = (limit, start_author, start_permlink, all_authors)
+    key = (limit, start_author, start_permlink, all_authors, owner)
     cached = state.feed_cache.get(key)
     if cached and cached[0] > time.monotonic():
         return cached[1]
@@ -154,6 +169,8 @@ async def list_cards(request: Request, limit: int = 20, start_author: str = "",
         if entry is None:
             continue
         if not all_authors and entry["author"] != state.client.account:
+            continue
+        if owner and entry["attribution"].get("hive_display_key") != owner:
             continue
         cards.append(entry)
     # Cursor from the last RAW post: filtering must never skip a page.

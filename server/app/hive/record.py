@@ -43,8 +43,21 @@ class CardImages(BaseModel):
 
 
 class Attribution(BaseModel):
+    """Who scanned the card. v1 identity model: one shared posting account,
+    so the user is identified by this block, not by the post author.
+
+    The server stamps user_id/hive_display_key/display_name from the
+    signed-in user (publish_routes) and strips them on anonymous publishes —
+    a client can never claim an identity. Email and the raw Google sub never
+    appear here (they'd be on chain forever).
+    """
     client_id: str  # anonymous per-install UUID; never an identity claim
     display_name: Optional[str] = None
+    user_id: Optional[str] = None  # app user id; None = anonymous scan
+    hive_display_key: Optional[str] = None  # public collector handle 'binder-<8 hex>'
+
+
+ATTRIBUTION_IDENTITY_FIELDS = ("user_id", "hive_display_key", "display_name")
 
 
 class CardRecordDraft(BaseModel):
@@ -65,6 +78,29 @@ class CardRecordDraft(BaseModel):
 
 class CardRecord(CardRecordDraft):
     images: CardImages
+
+
+def attribution_from_post(post: dict) -> Optional[Attribution]:
+    """Extract attribution from a bridge post; None when it isn't an app card.
+
+    Reads the top-level json_metadata.attribution block (what My Collection
+    filters on) and falls back to card.attribution for posts published before
+    that block existed, so older cards still resolve to their scanner.
+    """
+    meta = post.get("json_metadata") if isinstance(post, dict) else None
+    if not isinstance(meta, dict) or not isinstance(meta.get("card"), dict):
+        return None
+    base = meta["card"].get("attribution")
+    if not isinstance(base, dict):
+        return None
+    merged = dict(base)
+    block = meta.get("attribution")
+    if isinstance(block, dict):
+        merged.update({k: block.get(k) for k in ATTRIBUTION_IDENTITY_FIELDS if k in block})
+    try:
+        return Attribution.model_validate(merged)
+    except ValueError:
+        return None
 
 
 def slugify(value: str, max_len: int) -> str:
