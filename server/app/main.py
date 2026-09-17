@@ -8,11 +8,15 @@ from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import scan as scan_module
+from app.auth import TokeninfoVerifier
+from app.auth_routes import AuthState, router as auth_router
 from app.config import get_settings
 from app.hive.client import HiveClient
 from app.hive.queue import PublishQueue
 from app.publish_routes import HiveState, router as publish_router
+from app.hive.identity import HIVE_ACCOUNT_MODES
 from app.schemas import ScanResponse
+from app.users import UserStore
 from app.vision.prompt import VisionParseError
 from app.vision.providers import ProviderAuthError, ProviderRateLimited
 
@@ -20,8 +24,21 @@ from app.vision.providers import ProviderAuthError, ProviderRateLimited
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    if settings.hive_account_mode != "shared":
+        # "per_user" is a dormant shim (app/hive/identity.py) — refuse loudly
+        # rather than run with a mode the publish path cannot honor.
+        raise RuntimeError(f"HIVE_ACCOUNT_MODE={settings.hive_account_mode!r} is not implemented; "
+                           f"known modes: {HIVE_ACCOUNT_MODES}, only 'shared' runs in v1")
     stop = asyncio.Event()
     worker: Optional[asyncio.Task] = None
+    auth_http: Optional[httpx.AsyncClient] = None
+    if settings.auth_configured:
+        auth_http = httpx.AsyncClient(timeout=10.0)
+        app.state.auth = AuthState(
+            verifier=TokeninfoVerifier(auth_http), client_id=settings.auth_google_client_id,
+            secret=settings.auth_jwt_secret, users=UserStore(settings.auth_users_file),
+            shared_hive_account=settings.hive_account,
+            hive_account_mode=settings.hive_account_mode)
     if settings.hive_configured:
         client = HiveClient(settings.hive_node_list, account=settings.hive_account,
                             posting_key=settings.hive_posting_key,
@@ -44,11 +61,15 @@ async def lifespan(app: FastAPI):
         stop.set()
         await worker
         await app.state.hive.http.aclose()
+    if auth_http is not None:
+        await auth_http.aclose()
 
 
 app = FastAPI(title="Card Scanner API", version="0.1.0", lifespan=lifespan)
 app.state.hive = None  # set by lifespan when HIVE_ACCOUNT/HIVE_POSTING_KEY exist
+app.state.auth = None  # set by lifespan when AUTH_GOOGLE_CLIENT_ID/AUTH_JWT_SECRET exist
 app.include_router(publish_router)
+app.include_router(auth_router)
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # public endpoint; phone photos are well under this
 
