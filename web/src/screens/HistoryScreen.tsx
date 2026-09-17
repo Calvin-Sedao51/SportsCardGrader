@@ -43,14 +43,27 @@ export default function HistoryScreen({ onSelect }: Props) {
     if (!images) {
       throw new ApiError('The photos for this scan are gone — rescan the card to publish it.')
     }
+    // Publishing requires sign-in: never mark a signed-out scan for
+    // auto-resubmit — it would publish after a later sign-in without a
+    // fresh consent tap.
+    if (!user) {
+      throw new ApiError('Sign in with Google to publish to the Hive.')
+    }
     // Consent is durable: if the network drops here, the startup/online
     // sweep in usePublishPoller re-submits without asking again. The user id
     // is attached to the staged scan so the sync survives a reload too.
-    await setStatus(card.record_id, { publishRequested: true, user_id: user?.id })
-    const job = await publishCard(card, images.front, images.back)
-    await setStatus(card.record_id, {
-      status: 'queued', job_id: job.job_id, permlink: job.permlink,
-    })
+    await setStatus(card.record_id, { publishRequested: true, user_id: user.id })
+    try {
+      const job = await publishCard(card, images.front, images.back)
+      await setStatus(card.record_id, {
+        status: 'queued', job_id: job.job_id, permlink: job.permlink,
+      })
+    } catch (err) {
+      if (err instanceof ApiError && err.message.includes('hourly publish limit')) {
+        throw new ApiError(err.message + ' (your consent is saved — it will publish automatically once the pause lifts)')
+      }
+      throw err
+    }
   }
 
   async function handlePublish(card: StagedCard) {

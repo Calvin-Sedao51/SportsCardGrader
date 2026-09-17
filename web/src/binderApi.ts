@@ -113,20 +113,33 @@ export async function hiveStatus(): Promise<HiveStatus> {
 }
 
 // Re-submit consented publishes that never reached the server (offline at
-// tap time). Safe to call anytime: the server is idempotent on record_id.
+// tap time). Two safety rules:
+// - only cards owned by the CURRENT user are retried — a second account on
+//   this device must never trigger another user's publishes;
+// - the error message from a budget pause (429) is surfaced on the card,
+//   but consent stays so the next sweep retries after the window resets.
 export async function resumePendingPublishes(): Promise<void> {
   const staged = await listStaged()
+  const current = loadSession()?.user
   for (const card of staged) {
     if (card.status !== 'draft' || !card.publishRequested || card.legacy) continue
+    if (current && card.user_id && card.user_id !== current.id) continue
     const images = await getImages(card.record_id)
     if (!images) continue
     try {
       const job = await publishCard(card, images.front, images.back)
       await setStatus(card.record_id, {
         status: 'queued', job_id: job.job_id, permlink: job.permlink,
+        error: undefined,
       })
-    } catch {
+    } catch (err) {
       // Still offline (or server down) — stays publishRequested for next sweep.
+      if (err instanceof ApiError && err.message.includes('hourly publish limit')) {
+        // Don't overwrite a useful error on every 30s poll.
+        if (card.error !== err.message) {
+          await setStatus(card.record_id, { error: err.message }).catch(() => {})
+        }
+      }
     }
   }
 }

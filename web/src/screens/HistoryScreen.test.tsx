@@ -18,12 +18,22 @@ vi.mock('../binderApi', async importOriginal => ({
   resumePendingPublishes: mocks.resumePendingPublishes,
 }))
 
+// useAuth is mocked file-wide (default: signed out) so publish-flow tests run
+// deterministically; individual tests override the return value.
+const auth = vi.hoisted(() => ({ useAuth: vi.fn() }))
+vi.mock('../auth/useAuth', () => ({ useAuth: auth.useAuth }))
+
+const ME = { id: 'u1', email: null, display_name: 'Calvin', hive_display_key: 'binder-abcdef12',
+             created_at: '' }
+
 beforeEach(async () => {
   localStorage.clear()
   await _resetDbForTests()
   mocks.publishCard.mockReset()
   mocks.getPublishStatus.mockReset()
   mocks.resumePendingPublishes.mockReset().mockResolvedValue(undefined)
+  auth.useAuth.mockReturnValue({ status: 'signed_out', user: null, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
 })
 
 const response: ScanResponse = {
@@ -63,6 +73,9 @@ test('renders staged rows and onSelect fires with the card', async () => {
 })
 
 test('publish flow: consent dialog, then queued chip', async () => {
+  // Signed in — publishing is now gated on a session.
+  auth.useAuth.mockReturnValue({ status: 'signed_in', user: ME, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
   const card = await stageScan(response, null, blob(), null)
   mocks.publishCard.mockResolvedValue({
     job_id: card.record_id, permlink: 'card-luka', status: 'queued',
@@ -86,6 +99,21 @@ test('consent can be declined', async () => {
   fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
   fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
   expect(screen.queryByRole('dialog')).toBeNull()
+  expect(mocks.publishCard).not.toHaveBeenCalled()
+})
+
+test('signed out: publish asks for sign-in and never auto-queues the card', async () => {
+  // useAuth defaults to signed_out in beforeEach
+  const card = await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
+  fireEvent.click(await screen.findByRole('button', { name: /^publish$/i }))
+  expect(await screen.findByText(/sign in with google to publish/i)).toBeTruthy()
+  // The card must NOT be marked for auto-resubmit: it would publish without
+  // a fresh consent tap once the user later signs in.
+  const staged = await listStaged()
+  expect(staged).toEqual([expect.objectContaining({ record_id: card.record_id })])
+  expect(staged[0].publishRequested).toBeFalsy()
   expect(mocks.publishCard).not.toHaveBeenCalled()
 })
 
@@ -122,17 +150,7 @@ test('poller promotes queued cards when the server confirms', async () => {
 })
 
 // -- identity: sync my scans after sign-in ----------------------------------
-
-const auth = vi.hoisted(() => ({ useAuth: vi.fn() }))
-vi.mock('../auth/useAuth', () => ({ useAuth: auth.useAuth }))
-
-const ME = { id: 'u1', email: null, display_name: 'Calvin', hive_display_key: 'binder-abcdef12',
-             created_at: '' }
-
-beforeEach(() => {
-  auth.useAuth.mockReturnValue({ status: 'signed_out', user: null, error: null, configured: true,
-                                 signIn: vi.fn(), signOut: vi.fn() })
-})
+// (useAuth is mocked file-wide, default signed out — set above)
 
 test('signed out: no sync button', async () => {
   await stageScan(response, null, blob(), null)
