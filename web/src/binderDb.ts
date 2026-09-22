@@ -5,7 +5,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { StagedCard } from './binderTypes'
 import { loadHistory } from './storage'
-import type { ScanResponse } from './types'
+import type { Identity, ScanResponse } from './types'
 
 export const STAGED_LIMIT = 500
 const DB_NAME = 'cardscanner'
@@ -84,9 +84,26 @@ export async function stageScan(
   return card
 }
 
+// Entries staged before the Identity.player -> subject rename. Migrated in
+// memory at the read boundary so every render path sees `subject`.
+type LegacyIdentity = Omit<Identity, 'subject'> & { subject?: string; player?: string }
+
+function migrateLegacyIdentity(card: StagedCard): StagedCard {
+  const identity = card.response.vision.identity as LegacyIdentity | null
+  if (!identity || identity.subject != null || identity.player == null) return card
+  const { player, ...rest } = identity
+  return {
+    ...card,
+    response: {
+      ...card.response,
+      vision: { ...card.response.vision, identity: { ...rest, subject: player } },
+    },
+  }
+}
+
 export async function listStaged(): Promise<StagedCard[]> {
   const all = await (await db()).getAll('cards')
-  return all.sort((a, b) => b.at.localeCompare(a.at))
+  return all.map(migrateLegacyIdentity).sort((a, b) => b.at.localeCompare(a.at))
 }
 
 export async function getImages(

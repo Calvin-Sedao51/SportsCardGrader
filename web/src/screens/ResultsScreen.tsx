@@ -1,5 +1,5 @@
 import { verdictLabels } from '../labels'
-import type { CompsSource, ScanResponse } from '../types'
+import type { CardCategory, CompsSource, ScanResponse } from '../types'
 
 interface Props {
   result: ScanResponse
@@ -14,13 +14,25 @@ const sourceCaption: Record<CompsSource, string> = {
   sold: 'based on eBay sold prices',
 }
 
-// Deep link to eBay's completed-and-sold search in the sports-cards category:
+// eBay category ids for the sold-comps deep link, mapped by card category.
+// Keep in sync with EBAY_CATEGORY in server/app/ebay.py.
+const SACAT_BY_CATEGORY: Partial<Record<CardCategory, string>> = {
+  sports: '212', // Sports Trading Cards
+  pokemon: '183454', // CCG Individual Cards
+  yugioh: '183454',
+  magic: '183454',
+  onepiece: '183454',
+  other_tcg: '183454',
+}
+
+// Deep link to eBay's completed-and-sold search in the category-mapped id:
 // solds are ground truth on eBay, one tap away from our ask-based estimate.
-function SoldCompsLink({ searchString }: { searchString: string }) {
+function SoldCompsLink({ searchString, category }: { searchString: string; category?: CardCategory }) {
+  const sacat = SACAT_BY_CATEGORY[category ?? 'sports']
   const href =
     `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchString)}` +
-    // _sacat=212: sports cards — keep in sync with SPORTS_CARDS_CATEGORY in server/app/ebay.py
-    '&_sacat=212&LH_Sold=1&LH_Complete=1'
+    (sacat ? `&_sacat=${sacat}` : '') +
+    '&LH_Sold=1&LH_Complete=1'
   return (
     <a className="sold-link" href={href} target="_blank" rel="noopener noreferrer">
       See sold comps on eBay <span aria-hidden="true">→</span>
@@ -48,7 +60,7 @@ export default function ResultsScreen({ result, onRescan }: Props) {
     <div className="screen">
       {identity && (
         <section className="identity">
-          <h2>{identity.player}</h2>
+          <h2>{identity.subject}</h2>
           <p>
             {identity.year} {identity.set_name}
             {identity.card_number ? ` #${identity.card_number}` : ''}
@@ -121,7 +133,7 @@ export default function ResultsScreen({ result, onRescan }: Props) {
                 {comps?.source === 'active_listings' && (
                   <p className="caption">Sold prices show what buyers actually paid.</p>
                 )}
-                <SoldCompsLink searchString={identity.search_string} />
+                <SoldCompsLink searchString={identity.search_string} category={identity.category} />
               </>
             )}
           </>
@@ -132,7 +144,9 @@ export default function ResultsScreen({ result, onRescan }: Props) {
             {ai_value_note && (
               <p className="caption">AI rough estimate (low confidence): {ai_value_note}</p>
             )}
-            {identity && <SoldCompsLink searchString={identity.search_string} />}
+            {identity && (
+              <SoldCompsLink searchString={identity.search_string} category={identity.category} />
+            )}
           </>
         )}
       </section>

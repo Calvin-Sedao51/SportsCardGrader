@@ -1,7 +1,17 @@
 // Mirrors server/app/schemas.py field-for-field (snake_case, matching serialized JSON).
 
+export type CardCategory =
+  | 'sports'
+  | 'pokemon'
+  | 'yugioh'
+  | 'magic'
+  | 'onepiece'
+  | 'other_tcg'
+  | 'other'
+
 export interface Identity {
-  player: string
+  subject: string // player (sports) or card/character name (TCG)
+  category?: CardCategory // optional: staged scans from before this field lack it
   year: string
   set_name: string
   card_number: string | null

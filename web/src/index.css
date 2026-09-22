@@ -574,3 +574,69 @@ button:focus-visible {
   gap: 12px;
   padding: 8px 0;
 }
+
+/* Identity: header sign-in, Binder tabs, sign-in gate, sync banner */
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+}
+
+.auth-status .who {
+  max-width: 9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.auth-status button {
+  min-height: 36px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--border);
+  border-radius: 12px;
+}
+
+.tabs button {
+  flex: 1;
+  min-height: 40px;
+  background: transparent;
+  color: inherit;
+  border: none;
+  border-radius: 9px;
+  font-weight: 600;
+}
+
+.tabs button[aria-selected='true'] {
+  background: var(--bg);
+  color: var(--accent);
+}
+
+.auth-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.sync-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}

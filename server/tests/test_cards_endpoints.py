@@ -135,15 +135,22 @@ def test_refresh_comps_enqueues_an_update(client, records, hive, monkeypatch):
     fresh = [CompListing(title=f"fresh {i}", price=80.0 + i, graded=False)
              for i in range(3)]
 
-    async def fake_search(query):
+    # A pokemon record, so the asserted category differs from fake_search's
+    # default — asserting "sports" couldn't catch dropped forwarding.
+    record = records[0].model_copy(update={
+        "identity": records[0].identity.model_copy(update={"category": "pokemon"})})
+
+    async def fake_search(query, category="sports"):
         assert "Luka Doncic" in query
+        # The stored record's identity category must reach pricing.
+        assert category == "pokemon"
         return fresh
 
     monkeypatch.setattr(scan_module, "search_comps", fake_search)
     monkeypatch.setattr(scan_module, "_get_pricing_source", lambda: FakeSource())
 
-    permlink = card_permlink(records[0])
-    hive.posts[permlink] = as_bridge_post(records[0])
+    permlink = card_permlink(record)
+    hive.posts[permlink] = as_bridge_post(record)
     resp = client.post(f"/api/cards/{permlink}/refresh-comps")
     assert resp.status_code == 202
     job_id = resp.json()["job_id"]

@@ -15,7 +15,7 @@ from app.vision.providers import ProviderAuthError, ProviderRateLimited
 
 GOOD_VISION = VisionResult(
     photo_ok=True,
-    identity=Identity(player="Luka Doncic", year="2018", set_name="Panini Prizm",
+    identity=Identity(subject="Luka Doncic", year="2018", set_name="Panini Prizm",
                       card_number="280", search_string="2018 Panini Prizm Luka Doncic #280",
                       confidence=0.92),
     condition=Condition(observations=[], grade_low=6, grade_high=8),
@@ -25,7 +25,7 @@ LISTINGS = [CompListing(title=f"Luka raw {i}", price=50.0 + i, graded=False) for
 
 SLAB_VISION = VisionResult(
     photo_ok=True,
-    identity=Identity(player="Luka Doncic", year="2018", set_name="Panini Prizm",
+    identity=Identity(subject="Luka Doncic", year="2018", set_name="Panini Prizm",
                       card_number="280",
                       search_string="2018 Panini Prizm Luka Doncic #280 PSA 9",
                       confidence=0.92),
@@ -35,6 +35,16 @@ SLAB_VISION = VisionResult(
 )
 SLAB_LISTINGS = [CompListing(title=f"Luka Doncic Prizm PSA 9 {i}", price=100.0 + i,
                              graded=True) for i in range(4)]
+
+POKEMON_VISION = VisionResult(
+    photo_ok=True,
+    identity=Identity(subject="Charizard", category="pokemon", year="1999",
+                      set_name="Base Set", card_number="4", variant="Holo 1st Edition",
+                      search_string="1999 Pokemon Base Set Charizard #4 Holo 1st Edition",
+                      confidence=0.9),
+    condition=Condition(observations=[], grade_low=5, grade_high=7),
+    authenticity=Authenticity(red_flags=[], risk="low"),
+)
 
 
 def post_scan(client, **form):
@@ -52,13 +62,13 @@ def client():
 
 def test_full_scan_happy_path(client, monkeypatch):
     async def fake_vision(*a, **k): return GOOD_VISION
-    async def fake_search(q): return LISTINGS
+    async def fake_search(q, category="sports"): return LISTINGS
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", fake_search)
     resp = post_scan(client, asking_price="30")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["vision"]["identity"]["player"] == "Luka Doncic"
+    assert body["vision"]["identity"]["subject"] == "Luka Doncic"
     assert body["comps"]["raw_count"] == 4
     assert body["verdict"]["verdict"] == "undervalued"
 
@@ -69,7 +79,7 @@ def test_high_authenticity_risk_vetoes_price_verdict(client, monkeypatch):
     risky = GOOD_VISION.model_copy(update={
         "authenticity": Authenticity(red_flags=["print pattern looks off"], risk="high")})
     async def fake_vision(*a, **k): return risky
-    async def fake_search(q): return LISTINGS
+    async def fake_search(q, category="sports"): return LISTINGS
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", fake_search)
     body = post_scan(client, asking_price="30").json()
@@ -81,7 +91,7 @@ def test_slabbed_scan_happy_path(client, monkeypatch):
     # A slabbed card has condition=null — the scan must not short-circuit,
     # and the verdict must price from same-grade graded comps.
     async def fake_vision(*a, **k): return SLAB_VISION
-    async def fake_search(q): return SLAB_LISTINGS
+    async def fake_search(q, category="sports"): return SLAB_LISTINGS
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", fake_search)
     resp = post_scan(client, asking_price="110")
@@ -103,12 +113,24 @@ def test_slabbed_scan_falls_back_to_overall_graded_comps(client, monkeypatch):
     mixed = [CompListing(title=f"Luka Doncic Prizm PSA 10 {i}", price=400.0 + i,
                          graded=True) for i in range(4)]
     async def fake_vision(*a, **k): return SLAB_VISION
-    async def fake_search(q): return mixed
+    async def fake_search(q, category="sports"): return mixed
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", fake_search)
     body = post_scan(client).json()
     assert "mixed grades" in body["verdict"]["reasoning"]
     assert body["comps"]["graded_count"] == 4
+
+
+def test_scan_passes_category_to_pricing(client, monkeypatch):
+    seen: list = []
+    async def fake_vision(*a, **k): return POKEMON_VISION
+    async def fake_search(q, category="sports"):
+        seen.append(category)
+        return LISTINGS
+    monkeypatch.setattr(scan_module, "run_vision", fake_vision)
+    monkeypatch.setattr(scan_module, "search_comps", fake_search)
+    assert post_scan(client, asking_price="30").status_code == 200
+    assert seen == ["pokemon"]
 
 
 def test_bad_photo_short_circuits(client, monkeypatch):
@@ -122,7 +144,7 @@ def test_bad_photo_short_circuits(client, monkeypatch):
 
 def test_ebay_failure_returns_partial(client, monkeypatch):
     async def fake_vision(*a, **k): return GOOD_VISION
-    async def broken_search(q): raise RuntimeError("ebay down")
+    async def broken_search(q, category="sports"): raise RuntimeError("ebay down")
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", broken_search)
     body = post_scan(client, asking_price="30").json()
@@ -133,7 +155,7 @@ def test_ebay_failure_returns_partial(client, monkeypatch):
 
 def test_ebay_not_configured_returns_partial(client, monkeypatch):
     async def fake_vision(*a, **k): return GOOD_VISION
-    async def not_configured(q):
+    async def not_configured(q, category="sports"):
         raise RuntimeError("eBay credentials not configured on this server")
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", not_configured)
@@ -173,7 +195,7 @@ def test_scan_within_timeout_budget_succeeds(client, monkeypatch):
     # The timeout wrapper must not disturb a scan that finishes in time,
     # even with a tight budget.
     async def fake_vision(*a, **k): return GOOD_VISION
-    async def fake_search(q): return LISTINGS
+    async def fake_search(q, category="sports"): return LISTINGS
     monkeypatch.setattr(scan_module, "run_vision", fake_vision)
     monkeypatch.setattr(scan_module, "search_comps", fake_search)
     monkeypatch.setattr("app.main.SCAN_TIMEOUT_SECONDS", 5.0)

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiError, checkHealth, SCAN_TIMEOUT_MS, scanCard } from './api'
 import { prepareImage } from './imagePrep'
 import ScanOverlay from './ScanOverlay'
+import AuthButton from './auth/AuthButton'
 import BinderScreen from './screens/BinderScreen'
 import HistoryScreen from './screens/HistoryScreen'
 import ResultsScreen from './screens/ResultsScreen'
@@ -103,6 +104,7 @@ function App() {
           <button disabled={busy} onClick={() => setView('history')}>History</button>
           <button disabled={busy} onClick={() => setView('settings')}>Settings</button>
         </nav>
+        <AuthButton />
       </header>
 
       {serverDown && (

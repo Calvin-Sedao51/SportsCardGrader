@@ -26,6 +26,10 @@ from app.schemas import (
 TOP_SALES_CAP = 10
 TITLE_CAP = 80
 
+GAME_TAG = {"sports": "sportscards", "pokemon": "pokemon", "yugioh": "yugioh",
+            "magic": "mtg", "onepiece": "onepiece",
+            "other_tcg": "tradingcards", "other": "tradingcards"}
+
 
 class CardComps(BaseModel):
     summary: CompsSummary
@@ -39,8 +43,21 @@ class CardImages(BaseModel):
 
 
 class Attribution(BaseModel):
+    """Who scanned the card. v1 identity model: one shared posting account,
+    so the user is identified by this block, not by the post author.
+
+    The server stamps user_id/hive_display_key/display_name from the
+    signed-in user (publish_routes) and strips them on anonymous publishes —
+    a client can never claim an identity. Email and the raw Google sub never
+    appear here (they'd be on chain forever).
+    """
     client_id: str  # anonymous per-install UUID; never an identity claim
     display_name: Optional[str] = None
+    user_id: Optional[str] = None  # app user id; None = anonymous scan
+    hive_display_key: Optional[str] = None  # public collector handle 'binder-<8 hex>'
+
+
+ATTRIBUTION_IDENTITY_FIELDS = ("user_id", "hive_display_key", "display_name")
 
 
 class CardRecordDraft(BaseModel):
@@ -63,6 +80,29 @@ class CardRecord(CardRecordDraft):
     images: CardImages
 
 
+def attribution_from_post(post: dict) -> Optional[Attribution]:
+    """Extract attribution from a bridge post; None when it isn't an app card.
+
+    Reads the top-level json_metadata.attribution block (what My Collection
+    filters on) and falls back to card.attribution for posts published before
+    that block existed, so older cards still resolve to their scanner.
+    """
+    meta = post.get("json_metadata") if isinstance(post, dict) else None
+    if not isinstance(meta, dict) or not isinstance(meta.get("card"), dict):
+        return None
+    base = meta["card"].get("attribution")
+    if not isinstance(base, dict):
+        return None
+    merged = dict(base)
+    block = meta.get("attribution")
+    if isinstance(block, dict):
+        merged.update({k: block.get(k) for k in ATTRIBUTION_IDENTITY_FIELDS if k in block})
+    try:
+        return Attribution.model_validate(merged)
+    except ValueError:
+        return None
+
+
 def slugify(value: str, max_len: int) -> str:
     ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_value.lower()).strip("-")
@@ -75,8 +115,8 @@ def build_tags(identity: Identity, community: str) -> list[str]:
     Derived tags are sc- prefixed so they always start with a letter and never
     collide with organic tags. Hive tags must match [a-z][a-z0-9-]*.
     """
-    tags = [community, "sportscards", "cardscanner"]
-    for raw, cap in ((identity.player, 32), (identity.year, 12), (identity.set_name, 24)):
+    tags = [community, GAME_TAG[identity.category], "cardscanner"]
+    for raw, cap in ((identity.subject, 32), (identity.year, 12), (identity.set_name, 24)):
         slug = slugify(raw or "", cap)
         if slug:
             tag = f"sc-{slug}"
@@ -88,10 +128,10 @@ def build_tags(identity: Identity, community: str) -> list[str]:
 def card_permlink(record: CardRecordDraft) -> str:
     """Deterministic for a record_id: an accidental second publish attempt
     targets the same permlink (an edit) instead of creating a duplicate post."""
-    player = slugify(record.identity.player, 32) or "unknown"
+    subject = slugify(record.identity.subject, 32) or "unknown"
     year = slugify(record.identity.year, 12) or "na"
     digest = hashlib.sha256(record.record_id.encode()).hexdigest()[:8]
-    return f"card-{player}-{year}-{digest}"
+    return f"card-{subject}-{year}-{digest}"
 
 
 def from_scan_response(scan: ScanResponse, *, record_id: str, images: CardImages,

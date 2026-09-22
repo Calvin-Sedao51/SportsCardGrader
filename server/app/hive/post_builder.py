@@ -7,7 +7,7 @@ rewards reads as reward farming and invites downvotes.
 """
 import json
 
-from app.hive.record import CardRecord, build_tags
+from app.hive.record import ATTRIBUTION_IDENTITY_FIELDS, CardRecord, build_tags
 
 APP_ID = "cardscanner/1.0"
 METADATA_BUDGET = 8192
@@ -19,7 +19,7 @@ class MetadataTooLarge(Exception):
 
 def _title(record: CardRecord) -> str:
     identity = record.identity
-    parts = [identity.player, "—", identity.year, identity.set_name]
+    parts = [identity.subject, "—", identity.year, identity.set_name]
     if identity.card_number:
         parts.append(f"#{identity.card_number}")
     if record.slab:
@@ -50,8 +50,9 @@ def _body(record: CardRecord) -> str:
     lines = [f"![front]({record.images.front})", ""]
     if record.images.back:
         lines += [f"![back]({record.images.back})", ""]
+    subject_label = "Player" if identity.category == "sports" else "Card"
     lines += ["| | |", "|---|---|",
-              f"| Player | {identity.player} |",
+              f"| {subject_label} | {identity.subject} |",
               f"| Year | {identity.year} |",
               f"| Set | {identity.set_name} |"]
     if identity.card_number:
@@ -70,6 +71,8 @@ def _body(record: CardRecord) -> str:
                      f"${record.verdict.value_high:g} |")
     if record.asking_price is not None:
         lines.append(f"| Asking | ${record.asking_price:g} |")
+    if record.attribution.display_name:
+        lines.append(f"| Collector | {record.attribution.display_name} |")
     lines += ["", _comps_line(record), "",
               "*Scanned with [Card Scanner](https://github.com/Calvin-Sedao51/SportsCardGrader)"
               " — full record data in this post's json_metadata.*"]
@@ -85,6 +88,10 @@ def build_post(record: CardRecord, *, community: str, account: str,
         "image": [url for url in (record.images.front, record.images.back) if url],
         "description": _title(record),
         "card": json.loads(record.model_dump_json()),  # via JSON to drop non-serializable types
+        # Machine-readable "who scanned this" block (shared posting account
+        # means the post author is NOT the collector). Read back by
+        # record.attribution_from_post; "My Collection" filters on it.
+        "attribution": {k: getattr(record.attribution, k) for k in ATTRIBUTION_IDENTITY_FIELDS},
     }
     metadata_json = json.dumps(metadata, separators=(",", ":"))
     if len(metadata_json) >= METADATA_BUDGET:
