@@ -222,7 +222,7 @@ test('links sold comps to the CCG category for TCG cards', () => {
   r.vision.identity!.category = 'pokemon'
   r.vision.identity!.subject = 'Charizard'
   r.vision.identity!.search_string = '1999 Pokemon Base Set Charizard #4 Holo 1st Edition'
-  render(<ResultsScreen result={r} onRescan={() => {}} />)
+  render(<ResultsScreen result={r} askingPrice={null} onRescan={() => {}} />)
   const link = screen.getByRole('link', { name: /sold comps/i })
   expect(link.getAttribute('href')).toContain('_sacat=183454')
 })
@@ -230,7 +230,7 @@ test('links sold comps to the CCG category for TCG cards', () => {
 test('sold-comps link has no category filter for "other" cards', () => {
   const r = structuredClone(base)
   r.vision.identity!.category = 'other'
-  render(<ResultsScreen result={r} onRescan={() => {}} />)
+  render(<ResultsScreen result={r} askingPrice={null} onRescan={() => {}} />)
   const link = screen.getByRole('link', { name: /sold comps/i })
   expect(link.getAttribute('href')).not.toContain('_sacat')
 })
@@ -239,7 +239,7 @@ test('sold-comps link defaults to the sports category when category is absent', 
   // Staged scans from before Identity.category existed.
   const r = structuredClone(base)
   delete r.vision.identity!.category
-  render(<ResultsScreen result={r} onRescan={() => {}} />)
+  render(<ResultsScreen result={r} askingPrice={null} onRescan={() => {}} />)
   const link = screen.getByRole('link', { name: /sold comps/i })
   expect(link.getAttribute('href')).toContain('_sacat=212')
 })
