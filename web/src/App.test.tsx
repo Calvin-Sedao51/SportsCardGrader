@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitForElementToBeRemoved } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react'
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
 import { ApiError } from './api'
@@ -11,12 +11,15 @@ const mocks = vi.hoisted(() => ({
   pushHistory: vi.fn(),
   stageScan: vi.fn(),
   migrateFromLocalStorage: vi.fn(),
+  listStaged: vi.fn(),
+  checkHealth: vi.fn(),
 }))
 
-// Keep the health check quiet in tests (healthy server -> no banner, no state update).
+// checkHealth defaults to healthy (no banner); individual tests flip it to
+// exercise the serverDown banner and recheck paths.
 vi.mock('./api', async importOriginal => ({
   ...(await importOriginal<typeof import('./api')>()),
-  checkHealth: () => Promise.resolve(true),
+  checkHealth: () => mocks.checkHealth(),
   scanCard: mocks.scanCard,
 }))
 
@@ -37,6 +40,7 @@ vi.mock('./binderDb', async importOriginal => ({
   ...(await importOriginal<typeof import('./binderDb')>()),
   stageScan: (...args: unknown[]) => mocks.stageScan(...args),
   migrateFromLocalStorage: (...args: unknown[]) => mocks.migrateFromLocalStorage(...args),
+  listStaged: (...args: unknown[]) => mocks.listStaged(...args),
 }))
 
 // jsdom does not implement object URLs; the front-photo preview creates and revokes them.
@@ -52,6 +56,8 @@ beforeEach(() => {
   mocks.pushHistory.mockReset().mockImplementation(realStorage.pushHistory)
   mocks.stageScan.mockReset().mockResolvedValue({ record_id: 'staged', status: 'draft' })
   mocks.migrateFromLocalStorage.mockReset().mockResolvedValue(0)
+  mocks.listStaged.mockReset().mockResolvedValue([])
+  mocks.checkHealth.mockReset().mockResolvedValue(true)
 })
 
 const stubResponse: ScanResponse = {
@@ -259,6 +265,106 @@ test('vibrates on scan success when the device supports it', async () => {
   pickFrontAndScan()
   await screen.findByText(/market value unavailable/i)
   expect(vibrate).toHaveBeenCalledWith(50)
+})
+
+test('asking price flows into the verdict hero; no orphaned caption', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  const verdictResponse: ScanResponse = {
+    ...stubResponse,
+    verdict: { value_low: 50, value_high: 70, verdict: 'undervalued', reasoning: 'Cheap!' },
+  }
+  mocks.scanCard.mockResolvedValue(verdictResponse)
+  render(<App />)
+  fireEvent.change(screen.getByLabelText(/asking price/i), { target: { value: '20' } })
+  pickFrontAndScan()
+  // Delta proves askingPrice reached ResultsScreen: midpoint 60 − ask 20 = 40.
+  await screen.findByText('≈ $40 below market')
+  // The old standalone "Asking price: $N" caption is gone.
+  expect(screen.queryByText(/^Asking price: \$/)).toBeNull()
+})
+
+test('reopening a scan from history restores its asking price', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  const verdictResponse: ScanResponse = {
+    ...stubResponse,
+    verdict: { value_low: 50, value_high: 70, verdict: 'undervalued', reasoning: 'Cheap!' },
+  }
+  mocks.scanCard.mockResolvedValue(verdictResponse)
+  // History lists IndexedDB-staged scans; stub the listing with the staged
+  // shape of this scan (staging itself is unit-tested in binderDb.test.ts).
+  mocks.listStaged.mockResolvedValue([{
+    record_id: 'r1',
+    at: new Date().toISOString(),
+    response: verdictResponse,
+    askingPrice: 20,
+    status: 'draft',
+  }])
+  render(<App />)
+  fireEvent.change(screen.getByLabelText(/asking price/i), { target: { value: '20' } })
+  pickFrontAndScan()
+  await screen.findByText('≈ $40 below market')
+
+  fireEvent.click(screen.getByRole('button', { name: 'History' }))
+  // Rows load from IndexedDB asynchronously now.
+  fireEvent.click(await screen.findByRole('button', { name: /unreadable photo/i }))
+  expect(await screen.findByText('≈ $40 below market')).toBeDefined()
+})
+
+test('banner shows when mount health check fails; Retry re-checks and clears it', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  mocks.checkHealth.mockResolvedValueOnce(false)
+  render(<App />)
+  await screen.findByText(/scan server unreachable/i)
+  // Server comes back; Retry re-runs the health check and clears the banner.
+  mocks.checkHealth.mockResolvedValue(true)
+  fireEvent.click(screen.getByRole('button', { name: /retry/i }))
+  await waitForElementToBeRemoved(() => screen.queryByText(/scan server unreachable/i))
+})
+
+test('Retry keeps the banner up while the server is still down', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  mocks.checkHealth.mockResolvedValue(false)
+  render(<App />)
+  await screen.findByText(/scan server unreachable/i)
+  fireEvent.click(screen.getByRole('button', { name: /retry/i }))
+  await waitFor(() => expect(mocks.checkHealth).toHaveBeenCalledTimes(2))
+  expect(screen.getByText(/scan server unreachable/i)).toBeDefined()
+})
+
+test('window online event re-checks health and clears the banner', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  mocks.checkHealth.mockResolvedValueOnce(false)
+  render(<App />)
+  await screen.findByText(/scan server unreachable/i)
+  mocks.checkHealth.mockResolvedValue(true)
+  fireEvent(window, new Event('online'))
+  await waitForElementToBeRemoved(() => screen.queryByText(/scan server unreachable/i))
+})
+
+test('scan attempt while server down re-checks first and blocks when still down', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  mocks.checkHealth.mockResolvedValue(false)
+  render(<App />)
+  await screen.findByText(/scan server unreachable/i)
+  pickFrontAndScan()
+  // Recheck ran (mount + pre-scan) but the scan itself never fired.
+  await waitFor(() => expect(mocks.checkHealth).toHaveBeenCalledTimes(2))
+  expect(mocks.scanCard).not.toHaveBeenCalled()
+  expect(screen.getByText(/scan server unreachable/i)).toBeDefined()
+})
+
+test('scan attempt while server down proceeds once health recovers', async () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  mocks.checkHealth.mockResolvedValueOnce(false)
+  mocks.scanCard.mockResolvedValue(stubResponse)
+  render(<App />)
+  await screen.findByText(/scan server unreachable/i)
+  // Server recovered by the time the user hits Scan.
+  mocks.checkHealth.mockResolvedValue(true)
+  pickFrontAndScan()
+  await screen.findByText(/market value unavailable/i)
+  expect(mocks.scanCard).toHaveBeenCalledOnce()
+  expect(screen.queryByText(/scan server unreachable/i)).toBeNull()
 })
 
 test('failed scan shows dismissible error and stays on scan view', async () => {
