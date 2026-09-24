@@ -5,7 +5,7 @@ from app.schemas import (Identity, Condition, Slab, VisionResult, Verdict,
 
 def test_identity_confidence_bounds():
     with pytest.raises(ValidationError):
-        Identity(player="Luka Doncic", year="2018", set_name="Prizm",
+        Identity(subject="Luka Doncic", year="2018", set_name="Prizm",
                  search_string="x", confidence=1.5)
 
 def test_condition_rejects_inverted_range():
@@ -46,3 +46,18 @@ def test_vision_result_slab_defaults_to_none():
 def test_vision_result_accepts_slab_with_null_condition():
     r = VisionResult(photo_ok=True, slab=Slab(company="PSA", grade="9"))
     assert r.slab.company == "PSA" and r.condition is None
+
+def test_identity_category_defaults_to_sports():
+    i = Identity(subject="Luka Doncic", year="2018", set_name="Prizm",
+                 search_string="x", confidence=0.9)
+    assert i.category == "sports"
+
+def test_identity_accepts_tcg_category():
+    i = Identity(subject="Charizard", year="1999", set_name="Base Set",
+                 category="pokemon", search_string="x", confidence=0.9)
+    assert i.category == "pokemon"
+
+def test_identity_rejects_unknown_category():
+    with pytest.raises(ValidationError):
+        Identity(subject="Charizard", year="1999", set_name="Base Set",
+                 category="beanie_babies", search_string="x", confidence=0.9)

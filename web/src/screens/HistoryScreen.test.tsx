@@ -18,18 +18,28 @@ vi.mock('../binderApi', async importOriginal => ({
   resumePendingPublishes: mocks.resumePendingPublishes,
 }))
 
+// useAuth is mocked file-wide (default: signed out) so publish-flow tests run
+// deterministically; individual tests override the return value.
+const auth = vi.hoisted(() => ({ useAuth: vi.fn() }))
+vi.mock('../auth/useAuth', () => ({ useAuth: auth.useAuth }))
+
+const ME = { id: 'u1', email: null, display_name: 'Calvin', hive_display_key: 'binder-abcdef12',
+             created_at: '' }
+
 beforeEach(async () => {
   localStorage.clear()
   await _resetDbForTests()
   mocks.publishCard.mockReset()
   mocks.getPublishStatus.mockReset()
   mocks.resumePendingPublishes.mockReset().mockResolvedValue(undefined)
+  auth.useAuth.mockReturnValue({ status: 'signed_out', user: null, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
 })
 
 const response: ScanResponse = {
   vision: {
     photo_ok: true, photo_issue: null,
-    identity: { player: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
+    identity: { subject: 'Luka Doncic', year: '2018', set_name: 'Panini Prizm',
                 card_number: '280', variant: null,
                 search_string: '2018 Panini Prizm Luka Doncic #280', confidence: 0.92 },
     condition: { observations: [], grade_low: 6, grade_high: 8 },
@@ -63,6 +73,9 @@ test('renders staged rows and onSelect fires with the card', async () => {
 })
 
 test('publish flow: consent dialog, then queued chip', async () => {
+  // Signed in — publishing is now gated on a session.
+  auth.useAuth.mockReturnValue({ status: 'signed_in', user: ME, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
   const card = await stageScan(response, null, blob(), null)
   mocks.publishCard.mockResolvedValue({
     job_id: card.record_id, permlink: 'card-luka', status: 'queued',
@@ -86,6 +99,21 @@ test('consent can be declined', async () => {
   fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
   fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
   expect(screen.queryByRole('dialog')).toBeNull()
+  expect(mocks.publishCard).not.toHaveBeenCalled()
+})
+
+test('signed out: publish asks for sign-in and never auto-queues the card', async () => {
+  // useAuth defaults to signed_out in beforeEach
+  const card = await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
+  fireEvent.click(await screen.findByRole('button', { name: /^publish$/i }))
+  expect(await screen.findByText(/sign in with google to publish/i)).toBeTruthy()
+  // The card must NOT be marked for auto-resubmit: it would publish without
+  // a fresh consent tap once the user later signs in.
+  const staged = await listStaged()
+  expect(staged).toEqual([expect.objectContaining({ record_id: card.record_id })])
+  expect(staged[0].publishRequested).toBeFalsy()
   expect(mocks.publishCard).not.toHaveBeenCalled()
 })
 
@@ -119,4 +147,49 @@ test('poller promotes queued cards when the server confirms', async () => {
   await screen.findByText('Published')
   await waitFor(async () =>
     expect((await listStaged())[0].status).toBe('published'))
+})
+
+// -- identity: sync my scans after sign-in ----------------------------------
+// (useAuth is mocked file-wide, default signed out — set above)
+
+test('signed out: no sync button', async () => {
+  await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  await screen.findByText(/Luka Doncic/)
+  expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
+})
+
+test('signed in: sync attaches my user id to every draft and publishes after one consent', async () => {
+  auth.useAuth.mockReturnValue({ status: 'signed_in', user: ME, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
+  const a = await stageScan(response, null, blob('a'), null)
+  const b = await stageScan(response, 20, blob('b'), null)
+  mocks.publishCard.mockImplementation(async (card: { record_id: string }) => ({
+    job_id: card.record_id, permlink: `card-${card.record_id}`, status: 'queued',
+    position: 1, eta_seconds: 0, hive_url: null, last_error: null }))
+  render(<HistoryScreen onSelect={() => {}} />)
+  fireEvent.click(await screen.findByRole('button', { name: /sync my scans/i }))
+  const dialog = await screen.findByRole('dialog', { name: /sync/i })
+  expect(dialog.textContent).toMatch(/2 scans/i)
+  expect(dialog.textContent).toMatch(/public/i)
+  expect(mocks.publishCard).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: /^sync and publish$/i }))
+  await waitFor(() => expect(mocks.publishCard).toHaveBeenCalledTimes(2))
+  await waitFor(async () => {
+    const staged = await listStaged()
+    expect(staged.map(s => s.status)).toEqual(['queued', 'queued'])
+    expect(staged.map(s => s.user_id)).toEqual(['u1', 'u1'])
+  })
+  expect(new Set([a.record_id, b.record_id]).size).toBe(2)
+  await waitFor(() => expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull())
+})
+
+test('signed in with nothing publishable: no sync button', async () => {
+  auth.useAuth.mockReturnValue({ status: 'signed_in', user: ME, error: null, configured: true,
+                                 signIn: vi.fn(), signOut: vi.fn() })
+  const card = await stageScan(response, null, blob(), null)
+  await setStatus(card.record_id, { status: 'published', hive_url: 'https://peakd.com/@x/y' })
+  render(<HistoryScreen onSelect={() => {}} />)
+  await screen.findByText(/Luka Doncic/)
+  expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
 })

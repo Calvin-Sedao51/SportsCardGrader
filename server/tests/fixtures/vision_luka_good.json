@@ -2,7 +2,8 @@
   "photo_ok": true,
   "photo_issue": null,
   "identity": {
-    "player": "Luka Doncic",
+    "subject": "Luka Doncic",
+    "category": "sports",
     "year": "2018",
     "set_name": "Panini Prizm",
     "card_number": "280",

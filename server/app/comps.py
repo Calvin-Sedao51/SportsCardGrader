@@ -52,9 +52,19 @@ def is_graded(title: str) -> bool:
     return bool(_GRADED_RE.search(title))
 
 
-def is_junk(title: str) -> bool:
-    """True when the title marks a listing that must not price this card."""
-    return bool(_JUNK_RE.search(title))
+def is_junk(title: str, query: str = "") -> bool:
+    """True when the title marks a listing that must not price this card.
+
+    A junk token that already appears in `query` (the vision search string) is
+    part of the card's NAME, not a junk signal — "Greninja BREAK", "Digital
+    Bug" — so that match is exempt. The exemption is checked with the same
+    word-boundary, case-insensitive matching as _JUNK_RE, and is per-token:
+    tokens absent from the query still junk ("case break" on ordinary scans).
+    """
+    for m in _JUNK_RE.finditer(title):
+        if not query or not re.search(rf"\b{re.escape(m.group(0))}\b", query, re.I):
+            return True
+    return False
 
 
 def _robust_low(prices: list[float]) -> float | None:
@@ -115,10 +125,11 @@ def _bucket_stats(prices: list[float]) -> tuple[float | None, float | None]:
     return _clamp_to_median(_floor(prices), median), median
 
 
-def summarize(listings: list[CompListing], source: str) -> CompsSummary:
+def summarize(listings: list[CompListing], source: str,
+              query: str = "") -> CompsSummary:
     # Junk is dropped before bucketing so counts, lows, and medians all
     # reflect only plausible comps (a graded lot is junk too).
-    kept = [l for l in listings if not is_junk(l.title)]
+    kept = [l for l in listings if not is_junk(l.title, query=query)]
     raw = sorted(l.price for l in kept if not l.graded)
     graded = sorted(l.price for l in kept if l.graded)
     raw_low, raw_median = _bucket_stats(raw)
@@ -146,7 +157,7 @@ def _norm_grade(grade: str) -> str:
 
 
 def matching_grade_summary(listings: list[CompListing], company: str, grade: str,
-                           source: str) -> CompsSummary | None:
+                           source: str, query: str = "") -> CompsSummary | None:
     """Summary of comps slabbed by the SAME company at the SAME grade.
 
     A PSA 9 is priced by other PSA 9s — a PSA 10 or BGS 9.5 of the same card
@@ -159,7 +170,7 @@ def matching_grade_summary(listings: list[CompListing], company: str, grade: str
     want_grade = _norm_grade(grade)
     prices = []
     for l in listings:
-        if is_junk(l.title):
+        if is_junk(l.title, query=query):
             continue
         m = _GRADED_RE.search(l.title)
         if (m and m.group(1).upper() == want_company

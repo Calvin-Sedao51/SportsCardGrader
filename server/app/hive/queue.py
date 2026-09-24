@@ -38,6 +38,7 @@ class PublishJob(BaseModel):
     kind: Literal["create", "update"] = "create"
     record: CardRecord
     permlink: str
+    user_id: Optional[str] = None  # signed-in publisher; None = anonymous
     status: Literal["queued", "publishing", "confirmed", "failed"] = "queued"
     attempts: int = 0
     last_error: Optional[str] = None
@@ -91,14 +92,16 @@ class PublishQueue:
     # -- public API -----------------------------------------------------------
 
     def enqueue(self, record: CardRecord,
-                kind: Literal["create", "update"] = "create") -> PublishJob:
+                kind: Literal["create", "update"] = "create", *,
+                user_id: Optional[str] = None) -> PublishJob:
         from app.hive.record import card_permlink
         existing = self._jobs.get(record.record_id)
         if existing is not None and not (kind == "update" and existing.status == "confirmed"):
             return existing  # idempotent: re-submits return the live job
         seq = max((j.seq for j in self._jobs.values()), default=0) + 1
         job = PublishJob(job_id=record.record_id, seq=seq, kind=kind, record=record,
-                         permlink=card_permlink(record), enqueued_at=self.clock())
+                         permlink=card_permlink(record), enqueued_at=self.clock(),
+                         user_id=user_id)
         if existing is not None:  # re-publishing a confirmed record = edit
             job.kind = "update"
         self._jobs[job.job_id] = job
