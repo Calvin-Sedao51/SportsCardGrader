@@ -30,7 +30,9 @@ if ! curl -sf "$API_URL/api/health" >/dev/null; then
 fi
 
 if ! curl -sf "$BASE_URL" >/dev/null; then
-  if [ -n "${E2E_GOOGLE_CLIENT_ID:-}" ]; then export VITE_GOOGLE_CLIENT_ID="$E2E_GOOGLE_CLIENT_ID"; fi
+  # Same ID as the server so the web build shows its sign-in controls; the
+  # placeholder only matters if someone clicks "Sign in" during a token run.
+  export VITE_GOOGLE_CLIENT_ID="$CLIENT_ID"
   ( cd "$ROOT/web" && exec npm run dev -- --port 5173 --strictPort ) > "$ARTIFACTS/web.log" 2>&1 &
   echo $! >> "$PIDS"
 fi

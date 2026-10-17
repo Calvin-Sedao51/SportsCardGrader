@@ -104,12 +104,10 @@ export function refreshComps(permlink: string): Promise<{ job_id: string }> {
                  { method: 'POST' })
 }
 
-export async function hiveStatus(): Promise<HiveStatus> {
-  try {
-    return await request<HiveStatus>('/api/hive/status')
-  } catch {
-    return { configured: false }
-  }
+// Rejects when the server is unreachable: callers decide whether that means
+// "no Hive" (it usually does not — see HistoryScreen).
+export function hiveStatus(): Promise<HiveStatus> {
+  return request<HiveStatus>('/api/hive/status')
 }
 
 // Re-submit consented publishes that never reached the server (offline at
