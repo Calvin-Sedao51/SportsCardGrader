@@ -57,6 +57,14 @@ def test_upsert_release_dedupes_and_keeps_known_values(db):
     assert db.stats()["releases"] == 1
 
 
+def test_upsert_release_keeps_richer_name(db):
+    db.upsert_release(release(name="2026 Leaf Mélange Baseball Hobby"))
+    db.upsert_release(release(name="2026 Leaf Melange"))      # slug-derived, shorter
+    assert db.releases()[0]["name"] == "2026 Leaf Mélange Baseball Hobby"
+    db.upsert_release(release(name="2026 Leaf Mélange Baseball Hobby Box"))
+    assert db.releases()[0]["name"] == "2026 Leaf Mélange Baseball Hobby Box"
+
+
 def test_upsert_cards_ignores_duplicates_and_blank_rows(db):
     rel_id, _ = db.upsert_release(release())
     cards = [Card("201", "Connor Bedard", team="Chicago", subset="Young Guns", is_rookie=True),

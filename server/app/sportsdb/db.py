@@ -106,10 +106,14 @@ class SportsDb:
         row = release.to_row()
         row["raw"] = json.dumps(row["raw"], sort_keys=True, default=str)
         existing = self._conn.execute(
-            "SELECT id FROM releases WHERE manufacturer = ? AND source_id = ?",
+            "SELECT id, name FROM releases WHERE manufacturer = ? AND source_id = ?",
             (release.manufacturer, release.source_id)).fetchone()
         if existing:
-            # Never overwrite known values with None from a thinner page.
+            # Never overwrite known values with None from a thinner page, and
+            # don't let a slug-derived name (sitemap-only pass) replace a
+            # richer one read from the product page earlier.
+            if len(row["name"]) < len(existing["name"]):
+                row["name"] = existing["name"]
             self._conn.execute(
                 """UPDATE releases SET name = ?, sport = ?,
                    year = COALESCE(?, year), release_date = COALESCE(?, release_date),
