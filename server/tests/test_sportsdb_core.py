@@ -29,6 +29,8 @@ def db(tmp_path):
     ("2026 Topps Chrome Basketball Hobby", "basketball"),
     ("2025-26 Upper Deck Series 1 Hockey", "hockey"),
     ("2026 Bowman Draft", "baseball"),
+    ("2025-26 Bowman Basketball", "basketball"),
+    ("2026 Bowman Football", "football"),
     ("2025 Panini Prizm Football", "football"),
     ("2026 Wild Card Matte Metal Multi-Sport Edition", "multi"),
     ("2026 Leaf Metal Baseball & Football", "multi"),

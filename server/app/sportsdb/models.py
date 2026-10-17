@@ -6,13 +6,18 @@ from typing import Literal, Optional
 Sport = Literal["basketball", "hockey", "baseball", "football", "multi", "other"]
 SPORTS: tuple[Sport, ...] = ("basketball", "hockey", "baseball", "football", "multi", "other")
 
-# Order matters: the first family whose keyword appears wins, except that two
-# different families in one name means a multi-sport product.
+# Explicit sport words win; two different sports in one name means a
+# multi-sport product. Brand words (Bowman, Hoops) only count when no explicit
+# sport word is present, so "2025-26 Bowman Basketball" stays basketball.
 _SPORT_KEYWORDS: list[tuple[Sport, tuple[str, ...]]] = [
-    ("basketball", ("basketball", "nba", "wnba", "hoops")),
+    ("basketball", ("basketball", "nba", "wnba")),
     ("hockey", ("hockey", "nhl", "pwhl")),
-    ("baseball", ("baseball", "mlb", "bowman")),
+    ("baseball", ("baseball", "mlb")),
     ("football", ("football", "nfl", "gridiron")),
+]
+_BRAND_HINTS: list[tuple[Sport, tuple[str, ...]]] = [
+    ("baseball", ("bowman",)),
+    ("basketball", ("hoops",)),
 ]
 _YEAR = re.compile(r"\b((?:19|20)\d{2})(?:-(?:\d{2}|\d{4}))?\b")
 
@@ -22,11 +27,15 @@ def guess_sport(text: str) -> Sport:
     lowered = text.lower()
     if "multi-sport" in lowered or "multi sport" in lowered or "multisport" in lowered:
         return "multi"
-    found = [sport for sport, words in _SPORT_KEYWORDS
-             if any(re.search(rf"\b{w}\b", lowered) for w in words)]
+    found = _matching(lowered, _SPORT_KEYWORDS) or _matching(lowered, _BRAND_HINTS)
     if len(found) > 1:
         return "multi"
     return found[0] if found else "other"
+
+
+def _matching(lowered: str, table: list[tuple[Sport, tuple[str, ...]]]) -> list[Sport]:
+    return [sport for sport, words in table
+            if any(re.search(rf"\b{w}\b", lowered) for w in words)]
 
 
 def guess_year(text: str) -> Optional[int]:
