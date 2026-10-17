@@ -46,10 +46,23 @@ The community feed is the app's storage backend — there is no database.
    .venv/bin/python scripts/hive_setup.py --post-test  # real hello post
    ```
 
-4. **Community props.** The community title/description ("The Binder") can
-   only be set by its owner/admin (currently **@meno**) via a `updateProps`
-   community custom_json. Ask them to set the title, and optionally to grant
-   the app account a `member`/`mod` role so posts never need approval.
+4. **Member role (required).** `hive-192941` is a Journal-type community
+   (`type_id=2`): Hivemind **mutes root posts from any author whose role is
+   below `member`**, so until this is granted the app's cards never appear in
+   the feed. Only the community owner/admin (currently **@meno**) can grant
+   it, by broadcasting this `community` custom_json with their posting key:
+
+   ```
+   ["setRole",{"community":"hive-192941","account":"<app account>","role":"member"}]
+   ```
+
+   Confirm it landed with `bridge.get_community_context`
+   (`{"name":"hive-192941","account":"<app account>"}` → `role` must be
+   `member`, `mod`, `admin` or `owner`). `scripts/hive_setup.py` runs this
+   check and warns loudly when the role is still `guest`.
+
+   While you're asking: the community title/description ("The Binder") can
+   also only be set by the owner/admin, via an `updateProps` custom_json.
 
 ## Operational constraints (read before scaling)
 

@@ -4,6 +4,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from app.hive.client import HiveRpcError
 from app.hive.post_builder import build_post
 from app.hive.queue import PublishQueue
 from app.hive.record import card_permlink
@@ -37,10 +38,13 @@ class FeedHive(FakeHive):
         super().__init__()
         self.feed = feed
         self.ranked_calls = 0
+        self.fail_ranked: Exception | None = None
 
     async def get_ranked_posts(self, **kwargs):
         self.ranked_calls += 1
         self.last_kwargs = kwargs
+        if self.fail_ranked is not None:
+            raise self.fail_ranked
         return self.feed
 
 
@@ -110,6 +114,22 @@ def test_cards_feed_is_cached(client, hive):
 def test_cards_feed_end_of_pagination(client, hive):
     hive.feed = hive.feed[:2]  # fewer raw posts than limit → no next page
     assert client.get("/api/cards?limit=20").json()["next"] is None
+
+
+@pytest.mark.parametrize("limit", [0, 50])
+def test_cards_feed_rejects_limit_outside_bridge_range(client, hive, limit):
+    # The bridge caps get_ranked_posts at 20; past that it answers a JSON-RPC
+    # error, so the API refuses up front instead of surfacing a 500.
+    resp = client.get(f"/api/cards?limit={limit}")
+    assert resp.status_code == 422
+    assert hive.ranked_calls == 0
+
+
+def test_cards_feed_bridge_error_is_502(client, hive):
+    hive.fail_ranked = HiveRpcError(-32602, "Invalid parameters")
+    resp = client.get("/api/cards")
+    assert resp.status_code == 502
+    assert resp.json()["detail"] == "The Binder feed is temporarily unavailable."
 
 
 def test_card_detail(client, records, hive):

@@ -3,14 +3,14 @@
 Usage (from server/, with HIVE_ACCOUNT + HIVE_POSTING_KEY in the environment
 or repo-root .env):
 
-    .venv/bin/python scripts/hive_setup.py            # subscribe + RC check
+    .venv/bin/python scripts/hive_setup.py            # subscribe + RC + role check
     .venv/bin/python scripts/hive_setup.py --post-test  # also publish a hello post
 
 Respects HIVE_DRY_RUN=true (logs ops instead of broadcasting).
 
-Note: setting the community title/description ("The Binder") needs the
-community owner/admin account (@meno as of 2026-08-16), not the app account —
-see docs/hive-setup.md.
+Note: setting the community title/description ("The Binder") and granting
+the app account the `member` role both need the community owner/admin
+account (@meno as of 2026-08-16), not the app account — see docs/hive-setup.md.
 """
 import argparse
 import asyncio
@@ -51,6 +51,24 @@ async def main() -> int:
         "json": json.dumps(["subscribe", {"community": settings.hive_community}]),
     })])
     print(f"  -> {tx}")
+
+    # Journal-type community (type_id=2): Hivemind mutes root posts from
+    # authors below `member`, so the feed stays empty until an admin grants it.
+    # Read-only on purpose — setRole needs the admin's key, which we don't hold.
+    context = await client.call("bridge", "get_community_context",
+                                {"name": settings.hive_community,
+                                 "account": settings.hive_account})
+    role = (context or {}).get("role") or "guest"
+    if role in ("member", "mod", "admin", "owner"):
+        print(f"Community role in {settings.hive_community}: {role}")
+    else:
+        print(f"\n!!! WARNING: @{settings.hive_account} has role '{role}' in "
+              f"{settings.hive_community}.\n"
+              f"!!! Root posts will be MUTED (invisible in the feed) until a community "
+              f"admin grants `member`:\n"
+              f'!!!   ["setRole",{{"community":"{settings.hive_community}",'
+              f'"account":"{settings.hive_account}","role":"member"}}]\n'
+              f"!!! See docs/hive-setup.md step 4.\n")
 
     if args.post_test:
         permlink = "the-binder-hello"

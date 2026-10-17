@@ -343,3 +343,14 @@ def test_sports_without_cardsight_key_has_no_catalog(client, monkeypatch):
     body = post_scan(client).json()
     assert body["catalog"] is None and body["catalog_error"] is None
     assert body["vision"]["identity"] == GOOD_VISION.identity.model_dump()
+
+
+def test_ebay_timeout_names_the_timeout_in_comps_error(client, monkeypatch):
+    async def fake_vision(*a, **k): return GOOD_VISION
+    # httpx timeouts stringify to "" — the error must still say what happened.
+    async def timed_out(q, category="sports"): raise httpx.ReadTimeout("")
+    monkeypatch.setattr(scan_module, "run_vision", fake_vision)
+    monkeypatch.setattr(scan_module, "search_comps", timed_out)
+    body = post_scan(client).json()
+    assert body["comps"] is None
+    assert "ReadTimeout" in body["comps_error"]

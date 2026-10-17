@@ -52,7 +52,6 @@ class EbayClient:
     # price-asc for the floor) is deliberately deferred.
     async def search(self, query: str, category: CardCategory = "sports",
                      limit: int = 200) -> list[CompListing]:
-        token = await self._get_token()
         # sort=price → ascending by price (Browse API; "-price" would be
         # descending). Without it eBay returns Best Match ordering, and
         # the cheapest true comps may never appear in the first `limit`.
@@ -60,12 +59,13 @@ class EbayClient:
         category_id = EBAY_CATEGORY.get(category)
         if category_id:
             params["category_ids"] = category_id
-        resp = await self._http.get(
-            "/buy/browse/v1/item_summary/search",
-            headers={"Authorization": f"Bearer {token}",
-                     "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"},  # change for non-US deployments
-            params=params,
-        )
+        resp = await self._search_request(params)
+        # eBay can revoke a client-credentials token before expires_in (key
+        # rotation, sandbox resets); without this the stale token stays
+        # cached for up to 2h. Re-mint and retry once; a second 401 is real.
+        if resp.status_code == 401:
+            self._token = None
+            resp = await self._search_request(params)
         resp.raise_for_status()
         items = resp.json().get("itemSummaries", [])
         listings: list[CompListing] = []
@@ -82,3 +82,12 @@ class EbayClient:
             except (ValueError, TypeError, ValidationError):
                 continue
         return listings
+
+    async def _search_request(self, params: dict) -> httpx.Response:
+        token = await self._get_token()
+        return await self._http.get(
+            "/buy/browse/v1/item_summary/search",
+            headers={"Authorization": f"Bearer {token}",
+                     "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"},  # change for non-US deployments
+            params=params,
+        )

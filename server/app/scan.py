@@ -88,7 +88,8 @@ async def price_vision(vision, asking_price: Optional[float]):
         listings = await search_comps(vision.identity.search_string,
                                       category=vision.identity.category)
     except Exception as e:
-        return None, None, [], str(e)
+        # httpx timeouts stringify to "", so the type name keeps it diagnosable.
+        return None, None, [], str(e) or type(e).__name__
 
     # The query rides along so junk tokens that are part of the card's name
     # ("Greninja BREAK") are exempt from the junk filter.
