@@ -1,0 +1,347 @@
+[
+ {
+  "id": 12568,
+  "name": "Connor McDavid Autographed The Show \u201cCanada on Top Gold\u201d",
+  "slug": "connor-mcdavid-autographed-the-show-canada-on-top-gold",
+  "parent": 0,
+  "type": "simple",
+  "variation": "",
+  "permalink": "https://upperdeck.com/product/connor-mcdavid-autographed-the-show-canada-on-top-gold/",
+  "sku": "",
+  "short_description": "<p>Heading into the 2025 4 Nations Faceoff, Connor McDavid had put together quite the resume, winning gold medals in the 2013 U18 World Championships, 2015 World Junior Championships, and the 2016 World Championships.</p>",
+  "description": "",
+  "on_sale": false,
+  "prices": {
+   "price": "0",
+   "regular_price": "0",
+   "sale_price": "0",
+   "price_range": null,
+   "currency_code": "USD",
+   "currency_symbol": "$",
+   "currency_minor_unit": 2,
+   "currency_decimal_separator": ".",
+   "currency_thousand_separator": ",",
+   "currency_prefix": "$",
+   "currency_suffix": ""
+  },
+  "price_html": "",
+  "average_rating": "0",
+  "review_count": 0,
+  "images": [
+   {
+    "id": 12577,
+    "src": "https://upperdeck.com/wp-content/uploads/2025/08/83132-THE-SHOW-ON-TOP-GOLD.jpg",
+    "thumbnail": "https://upperdeck.com/wp-content/uploads/2025/08/83132-THE-SHOW-ON-TOP-GOLD.jpg",
+    "srcset": "",
+    "sizes": "(max-width: 300px) 100vw, 300px",
+    "thumbnail_srcset": "",
+    "thumbnail_sizes": "(max-width: 300px) 100vw, 300px",
+    "name": "83132 THE SHOW ON TOP GOLD",
+    "alt": ""
+   }
+  ],
+  "categories": [
+   {
+    "id": 164,
+    "name": "Hockey",
+    "slug": "hockey-memorabilia",
+    "link": "https://upperdeck.com/product-category/memorabilia/hockey-memorabilia/"
+   },
+   {
+    "id": 40,
+    "name": "Memorabilia",
+    "slug": "memorabilia",
+    "link": "https://upperdeck.com/product-category/memorabilia/"
+   }
+  ],
+  "tags": [],
+  "brands": [],
+  "attributes": [],
+  "variations": [],
+  "grouped_products": [],
+  "has_options": false,
+  "is_purchasable": false,
+  "is_in_stock": true,
+  "is_on_backorder": false,
+  "low_stock_remaining": null,
+  "stock_availability": {
+   "text": "",
+   "class": "in-stock"
+  },
+  "sold_individually": false,
+  "weight": "",
+  "dimensions": {
+   "length": "",
+   "width": "",
+   "height": ""
+  },
+  "formatted_weight": "N/A",
+  "formatted_dimensions": "N/A",
+  "add_to_cart": {
+   "text": "Read More",
+   "description": "Read more about &ldquo;Connor McDavid Autographed The Show \u201cCanada on Top Gold\u201d&rdquo;",
+   "url": "https://upperdeck.com/product/connor-mcdavid-autographed-the-show-canada-on-top-gold/",
+   "single_text": "Add to cart",
+   "minimum": 1,
+   "maximum": 9999,
+   "multiple_of": 1
+  },
+  "is_password_protected": false,
+  "extensions": {},
+  "_links": {
+   "self": [
+    {
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products/12568",
+     "targetHints": {
+      "allow": [
+       "GET"
+      ]
+     }
+    }
+   ],
+   "collection": [
+    {
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products"
+    }
+   ],
+   "related": [
+    {
+     "embeddable": true,
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products?related=12568&per_page=10"
+    }
+   ]
+  }
+ },
+ {
+  "id": 12454,
+  "name": "2025-26 MVP",
+  "slug": "2025-26-mvp",
+  "parent": 0,
+  "type": "simple",
+  "variation": "",
+  "permalink": "https://upperdeck.com/product/2025-26-mvp/",
+  "sku": "",
+  "short_description": "<p>Your 2025-26 hockey card collection starts here with an impressive base set consisting of 200 regular cards and 50 SP\u2019s &amp; Rookies cards!</p>",
+  "description": "",
+  "on_sale": false,
+  "prices": {
+   "price": "0",
+   "regular_price": "0",
+   "sale_price": "0",
+   "price_range": null,
+   "currency_code": "USD",
+   "currency_symbol": "$",
+   "currency_minor_unit": 2,
+   "currency_decimal_separator": ".",
+   "currency_thousand_separator": ",",
+   "currency_prefix": "$",
+   "currency_suffix": ""
+  },
+  "price_html": "",
+  "average_rating": "0",
+  "review_count": 0,
+  "images": [
+   {
+    "id": 12455,
+    "src": "https://upperdeck.com/wp-content/uploads/2025/07/box-25-26-MVP-Hobby-SB523-1.png",
+    "thumbnail": "https://upperdeck.com/wp-content/uploads/2025/07/box-25-26-MVP-Hobby-SB523-1.png",
+    "srcset": "",
+    "sizes": "(max-width: 284px) 100vw, 284px",
+    "thumbnail_srcset": "",
+    "thumbnail_sizes": "(max-width: 284px) 100vw, 284px",
+    "name": "box-25-26-MVP-Hobby-SB523",
+    "alt": ""
+   }
+  ],
+  "categories": [
+   {
+    "id": 34,
+    "name": "Hockey",
+    "slug": "hockey",
+    "link": "https://upperdeck.com/product-category/trading-cards/sports/hockey/"
+   },
+   {
+    "id": 33,
+    "name": "Sports",
+    "slug": "sports",
+    "link": "https://upperdeck.com/product-category/trading-cards/sports/"
+   },
+   {
+    "id": 32,
+    "name": "Trading Cards",
+    "slug": "trading-cards",
+    "link": "https://upperdeck.com/product-category/trading-cards/"
+   }
+  ],
+  "tags": [],
+  "brands": [],
+  "attributes": [],
+  "variations": [],
+  "grouped_products": [],
+  "has_options": false,
+  "is_purchasable": false,
+  "is_in_stock": true,
+  "is_on_backorder": false,
+  "low_stock_remaining": null,
+  "stock_availability": {
+   "text": "",
+   "class": "in-stock"
+  },
+  "sold_individually": false,
+  "weight": "",
+  "dimensions": {
+   "length": "",
+   "width": "",
+   "height": ""
+  },
+  "formatted_weight": "N/A",
+  "formatted_dimensions": "N/A",
+  "add_to_cart": {
+   "text": "Read More",
+   "description": "Read more about &ldquo;2025-26 MVP&rdquo;",
+   "url": "https://upperdeck.com/product/2025-26-mvp/",
+   "single_text": "Add to cart",
+   "minimum": 1,
+   "maximum": 9999,
+   "multiple_of": 1
+  },
+  "is_password_protected": false,
+  "extensions": {},
+  "_links": {
+   "self": [
+    {
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products/12454",
+     "targetHints": {
+      "allow": [
+       "GET"
+      ]
+     }
+    }
+   ],
+   "collection": [
+    {
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products"
+    }
+   ],
+   "related": [
+    {
+     "embeddable": true,
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products?related=12454&per_page=10"
+    }
+   ]
+  }
+ },
+ {
+  "id": 11882,
+  "name": "Skybox The Matrix Weekly (e-Pack)",
+  "slug": "skybox-the-matrix-weekly-e-pack",
+  "parent": 0,
+  "type": "simple",
+  "variation": "",
+  "permalink": "https://upperdeck.com/product/skybox-the-matrix-weekly-e-pack/",
+  "sku": "",
+  "short_description": "<p>Skybox The Matrix Weekly has plugged in exclusively on Upper Deck e-Pack\u00ae! Follow the White Rabbit with 1999 packs releasing every week for 10 consecutive weeks. Each pack will contain 4 cards, including 1 of 4 Base Set cards and 1 of 2 Black &amp; White Variant cards\u00a0specific to that week, along with one Insert, Parallel or Printing Plate and one Digital Rain card.</p>",
+  "description": "",
+  "on_sale": false,
+  "prices": {
+   "price": "0",
+   "regular_price": "0",
+   "sale_price": "0",
+   "price_range": null,
+   "currency_code": "USD",
+   "currency_symbol": "$",
+   "currency_minor_unit": 2,
+   "currency_decimal_separator": ".",
+   "currency_thousand_separator": ",",
+   "currency_prefix": "$",
+   "currency_suffix": ""
+  },
+  "price_html": "",
+  "average_rating": "0",
+  "review_count": 0,
+  "images": [
+   {
+    "id": 11883,
+    "src": "https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9.png",
+    "thumbnail": "https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-300x300.png",
+    "srcset": "https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9.png 1080w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-300x300.png 300w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-1024x1024.png 1024w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-150x150.png 150w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-768x768.png 768w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-600x600.png 600w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-100x100.png 100w",
+    "sizes": "(max-width: 1080px) 100vw, 1080px",
+    "thumbnail_srcset": "https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-300x300.png 300w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-1024x1024.png 1024w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-150x150.png 150w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-768x768.png 768w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-600x600.png 600w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9-100x100.png 100w, https://upperdeck.com/wp-content/uploads/2025/06/Untitled-design-9.png 1080w",
+    "thumbnail_sizes": "(max-width: 300px) 100vw, 300px",
+    "name": "Untitled design (9)",
+    "alt": ""
+   }
+  ],
+  "categories": [
+   {
+    "id": 170,
+    "name": "Entertainment",
+    "slug": "entertainment-trading-cards-2",
+    "link": "https://upperdeck.com/product-category/trading-cards/entertainment-trading-cards-2/"
+   },
+   {
+    "id": 32,
+    "name": "Trading Cards",
+    "slug": "trading-cards",
+    "link": "https://upperdeck.com/product-category/trading-cards/"
+   }
+  ],
+  "tags": [],
+  "brands": [],
+  "attributes": [],
+  "variations": [],
+  "grouped_products": [],
+  "has_options": false,
+  "is_purchasable": false,
+  "is_in_stock": true,
+  "is_on_backorder": false,
+  "low_stock_remaining": null,
+  "stock_availability": {
+   "text": "",
+   "class": "in-stock"
+  },
+  "sold_individually": false,
+  "weight": "",
+  "dimensions": {
+   "length": "",
+   "width": "",
+   "height": ""
+  },
+  "formatted_weight": "N/A",
+  "formatted_dimensions": "N/A",
+  "add_to_cart": {
+   "text": "Read More",
+   "description": "Read more about &ldquo;Skybox The Matrix Weekly (e-Pack)&rdquo;",
+   "url": "https://upperdeck.com/product/skybox-the-matrix-weekly-e-pack/",
+   "single_text": "Add to cart",
+   "minimum": 1,
+   "maximum": 9999,
+   "multiple_of": 1
+  },
+  "is_password_protected": false,
+  "extensions": {},
+  "_links": {
+   "self": [
+    {
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products/11882",
+     "targetHints": {
+      "allow": [
+       "GET"
+      ]
+     }
+    }
+   ],
+   "collection": [
+    {
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products"
+    }
+   ],
+   "related": [
+    {
+     "embeddable": true,
+     "href": "https://upperdeck.com/wp-json/wc/store/v1/products?related=11882&per_page=10"
+    }
+   ]
+  }
+ }
+]
