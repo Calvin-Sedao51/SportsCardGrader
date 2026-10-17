@@ -41,7 +41,9 @@ def main(argv=None) -> int:
     with SportsDb(args.db) as db:
         if args.cmd == "sync":
             names = list(SOURCES) if args.source == "all" else args.source.split(",")
-            log = (lambda _: None) if args.json else lambda m: print(m, file=sys.stderr)
+            # Progress and per-checklist failures always go to stderr; --json
+            # only changes what stdout carries (the launchd job keeps both).
+            log = lambda m: print(m, file=sys.stderr, flush=True)
             summaries = asyncio.run(sync(db, names, since_days=args.since_days,
                                          checklists=not args.no_checklists, log=log))
             if args.json:
