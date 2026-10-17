@@ -67,6 +67,16 @@ def test_upsert_release_keeps_richer_name(db):
     assert db.releases()[0]["name"] == "2026 Leaf Mélange Baseball Hobby Box"
 
 
+def test_upsert_release_keeps_sport_and_raw_from_a_thinner_pass(db):
+    db.upsert_release(release(sport="multi", raw={"status": "RELEASED"}))
+    db.upsert_release(release(sport="other", raw={}))      # sitemap-only pass
+    row = db.releases()[0]
+    assert row["sport"] == "multi" and row["raw"] == '{"status": "RELEASED"}'
+    db.upsert_release(release(sport="hockey", raw={"k": 1}))
+    row = db.releases()[0]
+    assert row["sport"] == "hockey" and row["raw"] == '{"k": 1}'
+
+
 def test_upsert_cards_ignores_duplicates_and_blank_rows(db):
     rel_id, _ = db.upsert_release(release())
     cards = [Card("201", "Connor Bedard", team="Chicago", subset="Young Guns", is_rookie=True),

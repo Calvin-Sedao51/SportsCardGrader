@@ -278,9 +278,9 @@ class _Browser:
             self._context = await self._browser.new_context(
                 locale="en-US", user_agent=ua.replace("HeadlessChrome", "Chrome"))
             self._page = await self._context.new_page()
-        except Exception:
+        except Exception as e:
             await self._pw.stop()
-            raise
+            raise Blocked(f"browser unavailable: {e}") from e
         return self
 
     async def __aexit__(self, *exc):
@@ -329,7 +329,9 @@ class ToppsSource:
         try:
             async with self._browser_factory() as browser:
                 return await browser.get_text(HUB_URL), await browser.get_text(CALENDAR_URL)
-        except Exception as e:
+        except (Blocked, ImportError) as e:
+            # Challenge page or no Playwright/Chromium: the site is unreachable
+            # for us. Anything else (5xx, timeout, parse error) is a real error.
             raise Blocked(f"{BLOCKED_MSG} ({e})") from e
 
     async def fetch_checklist(self, fetcher, release: Release) -> list[Card]:

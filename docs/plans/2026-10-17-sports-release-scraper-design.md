@@ -48,8 +48,8 @@ Topps and Panini need a real browser (Playwright/Chromium) or stay
   returns `[]`.
 - `sync.py` — orchestrates one run: for each source → releases → upsert →
   checklists for releases newer than `--since-days` → upsert → `runs` row.
-- `__main__.py` — CLI: `python -m app.sportsdb sync --source all|topps|…
-  --since-days 120 --db PATH --json`.
+- `__main__.py` — CLI: `python -m app.sportsdb [--db PATH] sync --source all|topps|…
+  --since-days 120 --json` (`--db` precedes the subcommand).
 
 ### Data model
 

@@ -21,7 +21,8 @@ from app.sportsdb.models import Card, Release, Sport, guess_sport, guess_year
 
 HOST = "https://onyxauthenticated.com"
 API = f"{HOST}/wp-json/wc/store/v1"
-PER_PAGE = 100                       # the Store API's maximum
+PER_PAGE = 100
+MAX_PAGES = 20   # the store lists ~30 products; a runaway API must not loop forever
 
 _NOT_A_SPORT = {"trading-cards", "collegiate-nil"}
 _SPORT_SLUGS: dict[str, Sport] = {"baseball": "baseball", "basketball": "basketball",
@@ -100,14 +101,13 @@ class OnyxSource:
     @staticmethod
     async def _pages(fetcher, query: str) -> list[dict]:
         products: list[dict] = []
-        page = 1
-        while True:
+        for page in range(1, MAX_PAGES + 1):
             batch = await fetcher.get_json(
                 f"{API}/products?per_page={PER_PAGE}&page={page}&orderby=date{query}")
             products.extend(batch)
             if len(batch) < PER_PAGE:
-                return products
-            page += 1
+                break
+        return products
 
 
 def _is_non_card(name: str, slugs: list[str]) -> bool:

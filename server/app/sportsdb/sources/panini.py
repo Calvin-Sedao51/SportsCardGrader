@@ -27,7 +27,8 @@ What answers and what does not (recon 2026-10-17, browser UA, from a US IP):
 * Files under ``https://assets.paniniamerica.net/checklist/`` download fine (200)
   when the URL is known, but the index that maps products to those xlsx/pdf files
   lives behind the blocked API, so ``fetch_checklist`` can only parse a release
-  that already carries a ``checklist_url`` and raises ``Blocked`` otherwise.
+  that already carries a ``checklist_url`` and returns ``[]`` otherwise (the run
+  stays ``ok``: the listing worked; cards simply aren't obtainable yet).
 """
 import re
 from io import BytesIO
@@ -79,7 +80,7 @@ class PaniniSource:
 
     async def fetch_checklist(self, fetcher, release: Release) -> list[Card]:
         if not release.checklist_url:
-            raise Blocked(CHECKLIST_BLOCKED)
+            return []    # see CHECKLIST_BLOCKED: no index maps products to files
         if not urlsplit(release.checklist_url).path.lower().endswith(".xlsx"):
             return []
         return parse_checklist_xlsx(await fetcher.get_bytes(release.checklist_url))

@@ -105,11 +105,10 @@ def test_release_fields_derived_from_slug(slug, name, sport, year, product_type)
 
 # --- checklists ---
 
-def test_fetch_checklist_without_url_is_blocked_and_makes_no_request():
+def test_fetch_checklist_without_url_is_empty_and_makes_no_request():
     transport, calls = site()
-    with pytest.raises(Blocked, match="paniniamerica.net"):
-        run(with_fetcher(transport, lambda f: PaniniSource().fetch_checklist(f, release())))
-    assert calls == []
+    cards = run(with_fetcher(transport, lambda f: PaniniSource().fetch_checklist(f, release())))
+    assert cards == [] and calls == []
 
 
 def test_fetch_checklist_pdf_is_empty_without_download():

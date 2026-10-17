@@ -87,9 +87,27 @@ def test_fetch_releases_browser_blocked_too_raises_blocked():
 
 def test_fetch_releases_browser_unavailable_raises_blocked():
     transport, _ = blocked_site()
-    browser = FakeBrowser(fail=RuntimeError("Executable doesn't exist"))
+    browser = FakeBrowser(fail=Blocked("browser unavailable: Executable doesn't exist"))
     with pytest.raises(Blocked, match="Executable doesn't exist"):
         run_releases(ToppsSource(browser_factory=browser), transport)
+
+
+def test_fetch_releases_browser_crash_is_an_error_not_blocked():
+    transport, _ = blocked_site()
+    browser = FakeBrowser(fail=RuntimeError("page.goto: Timeout 60000ms exceeded"))
+    with pytest.raises(RuntimeError, match="Timeout"):
+        run_releases(ToppsSource(browser_factory=browser), transport)
+
+
+def test_fetch_releases_does_not_open_browser_when_http_works():
+    def handler(request):
+        body = HUB_HTML if request.url.path == "/pages/checklists" else CALENDAR_HTML
+        return httpx.Response(200, text=body, headers={"content-type": "text/html"})
+    browser = FakeBrowser()
+    before = FakeBrowser.opened
+    releases = run_releases(ToppsSource(browser_factory=browser), httpx.MockTransport(handler))
+    assert FakeBrowser.opened == before and browser.urls == []
+    assert len(releases) == 10
 
 
 # --- browser path: hub + calendar -> releases ---

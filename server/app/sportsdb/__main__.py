@@ -1,9 +1,12 @@
-"""CLI: python -m app.sportsdb sync|stats|search|runs
+"""CLI: python -m app.sportsdb [--db PATH] sync|stats|search|runs
 
-  sync   [--source all|topps,...] [--since-days N] [--no-checklists] [--db PATH] [--json]
-  stats  [--db PATH]
-  search --player "Connor Bedard" [--year 2023] [--db PATH]
-  runs   [--db PATH]
+  --db PATH goes before the subcommand (default: $SPORTSDB_PATH or
+  server/data/sportsdb.sqlite).
+
+  sync   [--source all|topps,...] [--since-days N] [--no-checklists] [--json]
+  stats
+  search --player "Connor Bedard" [--year 2023]
+  runs
 """
 import argparse
 import asyncio
