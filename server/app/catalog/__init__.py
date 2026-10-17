@@ -10,8 +10,9 @@ any exception into ``ScanResponse.catalog_error`` and keeps the AI identity.
 | magic    | Scryfall   | none                      |
 | yugioh   | YGOPRODeck | none                      |
 | onepiece | OPTCG API  | none                      |
-| sports   | CardSight  | CARDSIGHT_API_KEY (opt-in) |
+| sports   | local sportsdb, then CardSight | SPORTSDB_PATH file; CARDSIGHT_API_KEY (opt-in) |
 """
+import sqlite3
 from typing import Optional, Protocol
 
 from app.catalog.match import norm_text
@@ -42,10 +43,56 @@ def build_catalog_source(category: CardCategory,
     if category == "onepiece":
         from app.catalog.optcg import OptcgSource
         return OptcgSource()
-    if category == "sports" and settings.cardsight_configured:
-        from app.catalog.cardsight import CardsightSource
-        return CardsightSource(settings.cardsight_api_key)
-    return None  # other_tcg / other / sports without a key
+    if category == "sports":
+        sources: list[CatalogSource] = []
+        if _sportsdb_has_cards(settings.sportsdb_file):
+            from app.catalog.sportsdb import SportsDbSource
+            sources.append(SportsDbSource(settings.sportsdb_file))
+        if settings.cardsight_configured:
+            from app.catalog.cardsight import CardsightSource
+            sources.append(CardsightSource(settings.cardsight_api_key))
+        if len(sources) > 1:
+            return FirstMatchSource(sources)
+        return sources[0] if sources else None  # no local DB and no key
+    return None  # other_tcg / other
+
+
+def _sportsdb_has_cards(path) -> bool:
+    """A release-only DB (checklists not synced yet) can't identify a card."""
+    if not path.exists():
+        return False
+    conn = sqlite3.connect(str(path))
+    try:
+        return conn.execute("SELECT 1 FROM cards LIMIT 1").fetchone() is not None
+    except sqlite3.DatabaseError:
+        return False
+    finally:
+        conn.close()
+
+
+class FirstMatchSource:
+    """Try each source in order; the first match wins. One failing source
+    must not hide a later one's answer, so errors only surface when nothing
+    else answered."""
+
+    def __init__(self, sources: list[CatalogSource]):
+        self.sources = sources
+
+    async def lookup(self, identity: Identity) -> Optional[CatalogMatch]:
+        failure: Optional[Exception] = None
+        answered = False
+        for source in self.sources:
+            try:
+                match = await source.lookup(identity)
+            except Exception as e:
+                failure = failure or e
+                continue
+            if match is not None:
+                return match
+            answered = True
+        if failure is not None and not answered:
+            raise failure
+        return None
 
 
 def apply_match(identity: Identity, match: Optional[CatalogMatch]) -> Identity:
