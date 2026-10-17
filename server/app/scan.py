@@ -1,19 +1,25 @@
-"""Scan orchestration: vision -> comps -> verdict, with partial results.
+"""Scan orchestration: vision -> (comps -> verdict || catalog), with partial results.
 
 Vision-path errors propagate to the endpoint (mapped to HTTP statuses);
-pricing/comps errors are swallowed into ScanResponse.comps_error so the user
-still gets the vision analysis they paid an AI call for.
+pricing/comps errors are swallowed into ScanResponse.comps_error, and catalog
+errors into ScanResponse.catalog_error, so the user still gets the vision
+analysis they paid an AI call for.
 """
+import asyncio
 from typing import Optional
 
+from app.catalog import CatalogSource, apply_match, build_catalog_source
 from app.comps import matching_grade_summary, summarize
 from app.config import get_settings
 from app.pricing import PricingSource, get_pricing_source
-from app.schemas import CardCategory, CompListing, ScanResponse, VisionResult
+from app.schemas import (CardCategory, CatalogMatch, CompListing, Identity,
+                         ScanResponse, VisionResult)
 from app.verdict import decide, decide_slab
 from app.vision.providers import analyze_card
 
 _pricing_source: Optional[PricingSource] = None
+# One adapter (and its HTTP connection pool) per category, built lazily.
+_catalog_sources: dict[CardCategory, Optional[CatalogSource]] = {}
 
 
 def _get_pricing_source() -> PricingSource:
@@ -33,6 +39,23 @@ async def search_comps(query: str, category: CardCategory = "sports") -> list[Co
     return await _get_pricing_source().search(query, category=category)
 
 
+async def lookup_catalog(identity: Identity) -> Optional[CatalogMatch]:
+    if identity.category not in _catalog_sources:
+        _catalog_sources[identity.category] = build_catalog_source(
+            identity.category, get_settings())
+    source = _catalog_sources[identity.category]
+    return await source.lookup(identity) if source is not None else None
+
+
+async def enrich_identity(identity: Identity) -> tuple[Optional[CatalogMatch], Optional[str]]:
+    """Best-effort catalog lookup: (match, None) or (None, catalog_error)."""
+    try:
+        return await lookup_catalog(identity), None
+    except Exception as e:
+        # httpx timeouts stringify to "", so the type name keeps it diagnosable.
+        return None, f"Card catalog lookup failed: {type(e).__name__}: {e}".rstrip(": ")
+
+
 async def perform_scan(front: bytes, front_type: str, back: Optional[tuple[bytes, str]],
                        provider: str, api_key: str, model: str,
                        asking_price: Optional[float]) -> ScanResponse:
@@ -43,10 +66,12 @@ async def perform_scan(front: bytes, front_type: str, back: Optional[tuple[bytes
             or (vision.condition is None and vision.slab is None)):
         return ScanResponse(vision=vision)
 
-    comps, verdict, _listings, comps_error = await price_vision(vision, asking_price)
-    if comps_error is not None:
-        return ScanResponse(vision=vision, comps_error=comps_error)
-    return ScanResponse(vision=vision, comps=comps, verdict=verdict)
+    # Pricing searches the vision search_string, so it doesn't wait on the catalog.
+    (comps, verdict, _listings, comps_error), (catalog, catalog_error) = await asyncio.gather(
+        price_vision(vision, asking_price), enrich_identity(vision.identity))
+    vision = vision.model_copy(update={"identity": apply_match(vision.identity, catalog)})
+    return ScanResponse(vision=vision, comps=comps, comps_error=comps_error,
+                        verdict=verdict, catalog=catalog, catalog_error=catalog_error)
 
 
 async def price_vision(vision, asking_price: Optional[float]):

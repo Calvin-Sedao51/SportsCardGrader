@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app import scan as scan_module
 from app.config import Settings
 from app.main import app
-from app.schemas import (Authenticity, CompListing, Condition, Identity,
+from app.schemas import (Authenticity, CatalogMatch, CompListing, Condition, Identity,
                          Slab, VisionResult)
 from app.vision.prompt import VisionParseError
 from app.vision.providers import ProviderAuthError, ProviderRateLimited
@@ -269,3 +269,77 @@ def test_oversized_upload_is_413(client, monkeypatch):
         headers={"X-AI-Provider": "anthropic", "X-AI-Key": "k"},
     )
     assert resp.status_code == 413
+
+
+# --- card catalog enrichment ---
+
+def catalog_match(conf=0.97, **kw):
+    base = dict(source="tcgdex", catalog_id="base1-4", name="Charizard",
+                set_name="Base Set (Unlimited)", card_number="4", rarity="Rare Holo",
+                image_url="https://assets.tcgdex.net/en/base/base1/4/high.webp",
+                match_confidence=conf)
+    return CatalogMatch(**{**base, **kw})
+
+
+def stub_pokemon_scan(monkeypatch, lookup):
+    async def fake_vision(*a, **k): return POKEMON_VISION
+    async def fake_search(q, category="sports"): return LISTINGS
+    monkeypatch.setattr(scan_module, "run_vision", fake_vision)
+    monkeypatch.setattr(scan_module, "search_comps", fake_search)
+    monkeypatch.setattr(scan_module, "lookup_catalog", lookup)
+
+
+def test_verified_catalog_match_fills_identity(client, monkeypatch):
+    async def lookup(identity): return catalog_match()
+    stub_pokemon_scan(monkeypatch, lookup)
+    body = post_scan(client, asking_price="30").json()
+    assert body["catalog"]["source"] == "tcgdex"
+    identity = body["vision"]["identity"]
+    assert identity["set_name"] == "Base Set (Unlimited)"
+    assert identity["card_number"] == "4"
+    assert identity["variant"] == "Holo 1st Edition"  # vision-only field kept
+    assert body["comps"]["raw_count"] == 4 and body["catalog_error"] is None
+    # The shared fixture is never mutated by enrichment.
+    assert POKEMON_VISION.identity.set_name == "Base Set"
+
+
+def test_low_confidence_match_is_only_a_suggestion(client, monkeypatch):
+    async def lookup(identity): return catalog_match(conf=0.7, set_name="Base Set 2")
+    stub_pokemon_scan(monkeypatch, lookup)
+    body = post_scan(client).json()
+    assert body["catalog"]["match_confidence"] == 0.7
+    assert body["vision"]["identity"]["set_name"] == "Base Set"
+
+
+def test_catalog_failure_keeps_vision_and_comps(client, monkeypatch):
+    async def lookup(identity): raise httpx.ReadTimeout("")
+    stub_pokemon_scan(monkeypatch, lookup)
+    resp = post_scan(client, asking_price="30")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["catalog"] is None
+    assert body["catalog_error"] == "Card catalog lookup failed: ReadTimeout"
+    assert body["vision"]["identity"]["set_name"] == "Base Set"
+    assert body["verdict"]["verdict"] == "undervalued"
+
+
+def test_catalog_runs_even_when_pricing_fails(client, monkeypatch):
+    async def lookup(identity): return catalog_match()
+    async def broken_search(q, category="sports"): raise RuntimeError("eBay down")
+    stub_pokemon_scan(monkeypatch, lookup)
+    monkeypatch.setattr(scan_module, "search_comps", broken_search)
+    body = post_scan(client).json()
+    assert body["comps_error"] == "eBay down"
+    assert body["catalog"]["catalog_id"] == "base1-4"
+
+
+def test_sports_without_cardsight_key_has_no_catalog(client, monkeypatch):
+    monkeypatch.setenv("CATALOG_ENABLED", "true")
+    monkeypatch.setenv("CARDSIGHT_API_KEY", "")
+    async def fake_vision(*a, **k): return GOOD_VISION
+    async def fake_search(q, category="sports"): return LISTINGS
+    monkeypatch.setattr(scan_module, "run_vision", fake_vision)
+    monkeypatch.setattr(scan_module, "search_comps", fake_search)
+    body = post_scan(client).json()
+    assert body["catalog"] is None and body["catalog_error"] is None
+    assert body["vision"]["identity"] == GOOD_VISION.identity.model_dump()
