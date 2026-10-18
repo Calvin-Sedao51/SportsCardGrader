@@ -47,7 +47,8 @@ async function decodeViaImageElement(file: File): Promise<Decoded> {
 
 async function decode(file: File): Promise<Decoded> {
   try {
-    const bitmap = await createImageBitmap(file)
+    // Pin EXIF handling explicitly so camera photos keep their rotation.
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
     return { source: bitmap, width: bitmap.width, height: bitmap.height, close: () => bitmap.close() }
   } catch {
     // Some browsers reject formats in createImageBitmap that <img> can still decode.

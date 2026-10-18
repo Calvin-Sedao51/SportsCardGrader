@@ -94,7 +94,11 @@ export default function BinderScreen() {
         {detail.card.images.back && (
           <img className="binder-photo" src={detail.card.images.back} alt="card back" />
         )}
-        <ResultsScreen result={toScanResponse(detail.card)} onRescan={() => setDetail(null)} />
+        <ResultsScreen
+          result={toScanResponse(detail.card)}
+          askingPrice={detail.card.asking_price ?? null}
+          onRescan={() => setDetail(null)}
+        />
         <div className="binder-detail-actions">
           <a href={hiveUrl} target="_blank" rel="noopener noreferrer">View on Hive</a>
           <button onClick={() => handleRefreshComps(detail.permlink)}>Refresh comps</button>

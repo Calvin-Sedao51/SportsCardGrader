@@ -23,6 +23,15 @@ export default function ScanOverlay({ previewUrl, onCancel }: Props) {
     return () => timers.forEach(clearTimeout)
   }, [])
 
+  // Escape cancels the scan, matching the visible Cancel button.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
   return (
     <div className="scan-overlay" role="status">
       <div className="scan-overlay-card">

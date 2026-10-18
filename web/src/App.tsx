@@ -26,6 +26,14 @@ function App() {
   const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
+  // Re-runs the health probe and syncs the banner. Returns the fresh result so
+  // callers (pre-scan gate) can branch without waiting on a state read.
+  async function recheckHealth(): Promise<boolean> {
+    const ok = await checkHealth()
+    setServerDown(!ok)
+    return ok
+  }
+
   useEffect(() => {
     checkHealth().then(ok => {
       if (!ok) setServerDown(true)
@@ -33,6 +41,13 @@ function App() {
     // One-time import of pre-IndexedDB localStorage history; harmless no-op after.
     migrateFromLocalStorage().catch(err =>
       console.warn('History migration failed:', err))
+    // Show wifi drops constantly; when the browser regains a network path,
+    // re-probe instead of leaving a stale "unreachable" banner up.
+    const onOnline = () => {
+      void checkHealth().then(ok => setServerDown(!ok))
+    }
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
   }, [])
 
   async function handleScan(front: File, back: File | null, askingPrice: number | null) {
@@ -41,11 +56,19 @@ function App() {
       setView('settings')
       return
     }
+    if (busy) return // health re-probe below can take seconds; block double-taps
+    // Banner says the server is down: re-probe before burning an upload over a
+    // dead link. If it recovered, the banner clears and the scan proceeds.
+    if (serverDown && !(await recheckHealth())) return
     const controller = new AbortController()
     abortRef.current = controller
     // Combine user cancel with a hard client timeout. AbortSignal.any/timeout
-    // are Baseline-available (Chrome 116+, Edge 116+, Firefox 124+, Safari 17.4+).
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(SCAN_TIMEOUT_MS)])
+    // are Baseline-available (Chrome 116+, Firefox 124+, Safari 17.4+); on older
+    // browsers degrade to cancel-only rather than throwing before the try block.
+    const signal =
+      'any' in AbortSignal && 'timeout' in AbortSignal
+        ? AbortSignal.any([controller.signal, AbortSignal.timeout(SCAN_TIMEOUT_MS)])
+        : controller.signal
     const previewUrl = URL.createObjectURL(front)
     setScanPreviewUrl(previewUrl)
     setBusy(true)
@@ -110,6 +133,7 @@ function App() {
       {serverDown && (
         <div className="banner" role="alert">
           Scan server unreachable
+          <button onClick={() => void recheckHealth()}>Retry</button>
           <button onClick={() => setServerDown(false)}>Dismiss</button>
         </div>
       )}
@@ -126,12 +150,11 @@ function App() {
         </>
       )}
       {view === 'results' && lastResult && (
-        <>
-          {lastAskingPrice != null && (
-            <p className="caption">Asking price: ${lastAskingPrice}</p>
-          )}
-          <ResultsScreen result={lastResult} onRescan={() => setView('scan')} />
-        </>
+        <ResultsScreen
+          result={lastResult}
+          askingPrice={lastAskingPrice}
+          onRescan={() => setView('scan')}
+        />
       )}
       {busy && (
         <ScanOverlay previewUrl={scanPreviewUrl} onCancel={() => abortRef.current?.abort()} />
