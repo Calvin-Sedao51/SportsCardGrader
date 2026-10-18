@@ -94,6 +94,10 @@ per adapter is marked `@pytest.mark.live` and skipped by default.
 - **B — Aggregator checklists (Beckett, Cardboard Connection, TCDB):**
   richest card-level data, but third-party ToS/copyright and not what was
   asked. Kept as the documented fallback if Topps/Panini stay blocked.
+  Tried for Panini checklists on 2026-10-17 at Calvin's request: Beckett and
+  TCDB sit behind a Cloudflare managed challenge that automated Chromium
+  cannot clear; Cardboard Connection never completes a TLS handshake from
+  this machine. Not viable today; see the Panini adapter docstring.
 - **C — Paid API only (CardSight):** already wired, quota-limited, no
   control over coverage. Stays as fallback.
 

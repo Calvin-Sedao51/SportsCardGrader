@@ -29,6 +29,14 @@ What answers and what does not (recon 2026-10-17, browser UA, from a US IP):
   lives behind the blocked API, so ``fetch_checklist`` can only parse a release
   that already carries a ``checklist_url`` and returns ``[]`` otherwise (the run
   stays ``ok``: the listing worked; cards simply aren't obtainable yet).
+* Aggregator fallback (recon 2026-10-17, same browser UA, plain HTTP and full
+  Chromium with the Topps ``_Browser`` helper): ``beckett.com`` and ``tcdb.com``
+  answer every path, including ``robots.txt``, ``/news/wp-json`` and sitemaps,
+  with a Cloudflare *managed* challenge ("Just a moment...") that never resolves
+  in automated Chromium, headless or headed, after 25 s. ``cardboardconnection.com``
+  accepts the TCP connection and then never completes the TLS handshake for curl,
+  httpx or Chromium. None is usable from this machine, so Panini checklists stay
+  limited to files whose URL is already known.
 """
 import re
 from io import BytesIO
