@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
@@ -9,9 +10,13 @@ class Settings(BaseSettings):
     ebay_env: str = "production"  # or "sandbox"
     pricing_source: str = "ebay_active"  # registry key in app/pricing.py
     # Card catalog lookup (app/catalog/): verifies the vision identity against
-    # free TCG databases. Sports needs a CardSight key; unset = AI-only identity.
+    # free TCG databases. Sports uses the local DB below and/or a CardSight key;
+    # with neither, sports scans keep the AI-only identity.
     catalog_enabled: bool = True
     cardsight_api_key: str = ""
+    # Local sports card DB (app/sportsdb/, filled by the daily scraper). Sports
+    # scans check it before CardSight; empty = server/data/sportsdb.sqlite.
+    sportsdb_path: str = ""
     anthropic_default_model: str = "claude-sonnet-5"
     openai_default_model: str = "gpt-5.1"
 
@@ -49,6 +54,11 @@ class Settings(BaseSettings):
     @property
     def cardsight_configured(self) -> bool:
         return bool(self.cardsight_api_key)
+
+    @property
+    def sportsdb_file(self) -> Path:
+        from app.sportsdb.db import DEFAULT_DB_PATH
+        return Path(self.sportsdb_path) if self.sportsdb_path else DEFAULT_DB_PATH
 
     @property
     def auth_configured(self) -> bool:

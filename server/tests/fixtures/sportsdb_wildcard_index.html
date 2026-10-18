@@ -1,0 +1,294 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wild Card · Checklists</title><link rel="canonical" href="https://wildcardinc.com/checklists/"><meta property="og:type" content="website"><meta property="og:site_name" content="Wild Card Trading Cards"><meta property="og:title" content="Wild Card · Checklists"><meta property="og:url" content="https://wildcardinc.com/checklists/"><meta property="og:image" content="https://wildcardinc.com/og/og-default.png">
+<style>/* trimmed */</style></head><body>
+
+<header class="hero">
+  <div class="aurora"></div>
+  <div class="beam"></div>
+  <div class="grain"></div>
+  <div class="deck" id="deck">
+    <div class="fc"><i></i></div>
+    <div class="fc"><i></i></div>
+    <div class="fc"><i></i></div>
+  </div>
+  <div class="wrap">
+    <p class="eyebrow">Every release. Every card.</p>
+    <h1><span class="wmwrap" id="wmwrap"><img class="wm" width="1400" height="298"
+      alt="Checklists" src="data:image/png;base64,TRIMMED"></span></h1>
+    <p class="lead">Every Wild Card release, by year, sport and product line.
+      Click any release to open its full checklist — subsets, foil boards, print runs and player lists.</p>
+    <div class="scroller"><span class="mouse"></span> Scroll to explore</div>
+  </div>
+</header>
+
+<section class="lines"><div class="wrap">
+  <div class="lineshd">
+    <h2>Search by product line</h2>
+    <span class="lineshint">Tap a logo to filter — tap again to clear</span>
+  </div>
+  <div class="railwrap">
+    <button class="railbtn prev" id="railprev" type="button" aria-label="Scroll product lines left">&#8249;</button>
+    <div class="rail" id="linegrid"></div>
+    <button class="railbtn next" id="railnext" type="button" aria-label="Scroll product lines right">&#8250;</button>
+  </div>
+</div></section>
+
+<div class="bar" id="bar"><div class="wrap">
+  <div class="tools">
+    <label class="search">
+      <svg viewBox="0 0 16 16"><path d="M11.7 10.3a6 6 0 1 0-1.4 1.4l3.3 3.3a1 1 0 0 0 1.4-1.4l-3.3-3.3ZM3 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z"/></svg>
+      <input id="q" placeholder="Search a release, product or year…" autocomplete="off">
+    </label>
+    <span class="chip on" data-f="sport" data-v="">All</span>
+    <span class="chip" data-f="sport" data-v="Football">Football</span><span class="chip" data-f="sport" data-v="Baseball">Baseball</span><span class="chip" data-f="sport" data-v="Basketball">Basketball</span><span class="chip" data-f="sport" data-v="Soccer">Soccer</span><span class="chip" data-f="sport" data-v="Multi-Sport">Multi-Sport</span><span class="chip" data-f="sport" data-v="Entertainment">Entertainment</span>
+    <span class="sel"><select id="line"><option value="">All product lines</option>
+      <option value="5 Card Draw™">5 Card Draw™</option><option value="7 Card Studs™">7 Card Studs™</option><option value="Alumination™">Alumination™</option><option value="AutoMania™">AutoMania™</option><option value="Fantasy Football">Fantasy Football</option><option value="Matte™">Matte™</option><option value="Metallix™">Metallix™</option><option value="Promos & Exclusives">Promos & Exclusives</option><option value="Splat">Splat</option>
+    </select></span>
+    <span class="sel"><select id="sort">
+      <option value="new">Newest first</option><option value="old">Oldest first</option>
+      <option value="az">A – Z</option><option value="big">Most subsets</option>
+    </select></span>
+  </div>
+</div></div>
+
+<div class="wrap">
+  <main id="out"></main>
+  <footer><span id="shown">182</span> of 182 checklists shown</footer>
+</div>
+
+<script>
+const ITEMS = [{"f": "5-card-draw__2022-football-5-card-draw-checklist.html", "t": "2022 Football 5 Card Draw", "p": "5 Card Draw™", "pk": "5-card-draw", "y": "2022", "s": "Football", "sub": 4, "bd": 16, "pl": 107}, {"f": "5-card-draw__2025-wild-card-jokers-wild-football.html", "t": "2025 Wild Card Jokers Wild™ Football", "p": "5 Card Draw™", "pk": "5-card-draw", "y": "2025", "s": "Football", "sub": 4, "bd": 16, "pl": 49, "mo": "December"}, {"f": "5-card-draw__2025-wild-card-jokers-wild-lamine-yamal-nationals.html", "t": "2024 Wild Card Jokers Wild Lamine Yamal National Exclusive", "p": "5 Card Draw™", "pk": "5-card-draw", "y": "2025", "s": "Soccer", "sub": 2, "bd": 20, "pl": 4, "mo": "July"}, {"f": "alumination__2026-wild-card-alumination-just-the-hits-football.html", "t": "Alumination · Just The Hits Football", "p": "Alumination™", "pk": "alumination", "y": "2026", "s": "Football", "sub": 20, "bd": 25, "pl": 69}, {"f": "promos-exclusive__updated-wild-card-qb1-on-the-clock-web-exclusive.html", "t": "Wild Card QB1 On The Clock", "p": "Promos & Exclusives", "pk": "promos-exclusive", "y": "—", "s": "Multi-Sport", "sub": 8, "bd": 20, "pl": 7}, {"f": "matte__2026-matte-metal-graffiti-multi-sport-hobby.html", "t": "2026 Wild Card Matte Metal Graffiti Multi-Sport Hobby", "p": "Matte™", "pk": "matte", "y": "2026", "s": "Multi-Sport", "sub": 7, "bd": 11, "pl": 80, "mo": "July"}];
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const HAS_IO = 'IntersectionObserver' in window;
+
+/* ---- hero deck + wordmark follow the pointer ---- */
+(function(){
+  const deck=document.getElementById('deck'), wm=document.getElementById('wmwrap');
+  if(RM || (!deck && !wm)) return;
+  let raf;
+  addEventListener('pointermove',e=>{
+    if(raf) return;
+    raf=requestAnimationFrame(()=>{
+      raf=null;
+      const x=(e.clientX/innerWidth-.5), y=(e.clientY/innerHeight-.5);
+      if(deck) deck.style.transform=`translateY(-50%) rotateY(${x*13}deg) rotateX(${-y*9}deg)`;
+      // Shallower than the deck so the title reads as nearer the viewer.
+      if(wm) wm.style.transform=`rotateY(${x*5}deg) rotateX(${-y*3.5}deg)`;
+    });
+  },{passive:true});
+})();
+
+/* ---- hero parallax ---- */
+(function(){
+  if(RM) return;
+  const hero=document.querySelector('.hero'), wrap=hero.querySelector('.wrap'),
+        aur=hero.querySelector('.aurora'), deck=document.getElementById('deck');
+  let raf;
+  addEventListener('scroll',()=>{
+    if(raf) return;
+    raf=requestAnimationFrame(()=>{
+      raf=null;
+      const y=scrollY;
+      if(y>innerHeight) return;
+      wrap.style.transform=`translateY(${y*.22}px)`;
+      wrap.style.opacity=Math.max(0,1-y/(innerHeight*.72));
+      aur.style.transform=`translateY(${y*.12}px)`;
+      if(deck) deck.style.marginTop=`${y*-.16}px`;
+    });
+  },{passive:true});
+})();
+
+/* ---- filter bar shadow when stuck ---- */
+(function(){
+  if(!HAS_IO) return;
+  const bar=document.getElementById('bar');
+  const io=new IntersectionObserver(([e])=>bar.classList.toggle('stuck',e.intersectionRatio<1),
+    {threshold:[1],rootMargin:'-1px 0px 0px 0px'});
+  io.observe(bar);
+})();
+
+const out=document.getElementById('out'), q=document.getElementById('q'),
+      line=document.getElementById('line'), sort=document.getElementById('sort'),
+      shown=document.getElementById('shown');
+let F={sport:'',line:'',q:'',sort:'new'};
+const lineSlug=p=>p.replace(/[\u2122\u00ae]/g,'').trim().toLowerCase()
+  .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+const LOGO_LINES=new Set(["5-card-draw", "7-card-studs", "alumination", "automania", "fantasy-football", "matte", "metallix", "splat", "promos-exclusives"]);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+
+function tile(i){
+  const short=i.p.replace(/[™]/g,'');
+  const s=lineSlug(i.p);
+  return `<a class="tile lgc-${s}" href="${encodeURI(i.f)}">
+    <div class="tin">
+      <div class="art">
+        <div class="band"></div><div class="foil"></div><div class="glare"></div>
+        <div class="mk" role="img" aria-label="Wild Card"></div>
+        ${LOGO_LINES.has(s)
+          ? `<div class="pllogo lg-${s}" role="img" aria-label="${esc(short)}"></div>`
+          : `<div class="pl">${esc(short.toUpperCase())}</div>`}
+        <span class="yr">${i.mo?esc(i.mo)+" ":""}${esc(i.y)}</span>
+      </div>
+      <div class="meta">
+        <h3>${esc(i.t)}</h3>
+        <div class="stats"><span class="sp">${esc(i.s)}</span><span><b>${i.sub}</b> subsets</span><span><b>${i.bd}</b> boards</span>
+          <span><b>${i.pl}</b> players</span></div>
+      </div>
+    </div></a>`;
+}
+
+/* ---- reveal on scroll (pure enhancement: content is visible unless JS
+       actively hides it right before observing) ---- */
+const canIO=HAS_IO && !RM;
+const show=el=>{
+  el.style.transitionDelay=(el.dataset.d||0)+'ms';
+  el.classList.remove('pre');
+  el.classList.add('in');
+};
+const reveal=canIO?new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(!e.isIntersecting) return;
+    show(e.target);
+    reveal.unobserve(e.target);
+  });
+},{rootMargin:'0px 0px -8% 0px',threshold:.05}):null;
+
+/* Safety net: if something is sitting in the viewport but still hidden a beat
+   later, the observer isn't delivering — show everything rather than render a
+   blank page. Costs nothing when the observer works, since nothing is ever stuck. */
+let sweepT;
+function sweep(){
+  const pend=[...document.querySelectorAll('.pre')];
+  const stuck=pend.some(el=>{const r=el.getBoundingClientRect();
+    return r.bottom>0 && r.top<innerHeight;});
+  if(stuck) pend.forEach(el=>{el.dataset.d=0;show(el);});
+}
+if(canIO){
+  addEventListener('load',()=>setTimeout(sweep,1000));
+  addEventListener('scroll',()=>{clearTimeout(sweepT);sweepT=setTimeout(sweep,700);},{passive:true});
+}
+
+function render(){
+  const t=F.q.toLowerCase();
+  let list=ITEMS.filter(i=>
+    (!F.sport||i.s===F.sport) && (!F.line||i.p===F.line) &&
+    (!t || (i.t+' '+i.p+' '+i.y+' '+(i.mo||'')+' '+i.s+' '+i.f).toLowerCase().includes(t)));
+  const S={new:(a,b)=>b.y.localeCompare(a.y)||a.t.localeCompare(b.t),
+            old:(a,b)=>a.y.localeCompare(b.y)||a.t.localeCompare(b.t),
+            az:(a,b)=>a.t.localeCompare(b.t), big:(a,b)=>b.sub-a.sub};
+  list.sort(S[F.sort]);
+  shown.textContent=list.length;
+  if(!list.length){out.innerHTML='<div class="empty">No releases match that.</div>';return;}
+  let h='';
+  if(F.sort==='new'||F.sort==='old'){
+    const g={}; list.forEach(i=>(g[i.y]=g[i.y]||[]).push(i));
+    for(const y of Object.keys(g).sort((a,b)=>F.sort==='new'?b.localeCompare(a):a.localeCompare(b)))
+      h+=`<section class="row"><div class="rowhd">
+          <h2>${y==='—'?'Undated':y+' Releases'}</h2><span class="n">${g[y].length}</span></div>
+          <div class="grid">${g[y].map(tile).join('')}</div></section>`;
+  } else {
+    h=`<section class="row"><div class="grid">${list.map(tile).join('')}</div></section>`;
+  }
+  out.innerHTML=h;
+  if(!canIO) return;               // already visible; nothing to animate
+  out.querySelectorAll('.rowhd').forEach(el=>{el.classList.add('pre');reveal.observe(el);});
+  out.querySelectorAll('.grid').forEach(g=>{
+    [...g.children].forEach((el,n)=>{
+      el.dataset.d=Math.min(n,7)*45; el.classList.add('pre'); reveal.observe(el);
+    });
+  });
+}
+
+/* ---- 3D tilt, delegated so 168 tiles cost 2 listeners ---- */
+(function(){
+  if(RM || matchMedia('(hover:none)').matches) return;
+  let cur=null,raf=null,px=0,py=0;
+  out.addEventListener('pointerover',e=>{
+    const t=e.target.closest('.tile'); if(!t||t===cur) return;
+    if(cur) reset(cur);
+    cur=t; t.classList.add('lift');
+  });
+  out.addEventListener('pointerout',e=>{
+    const t=e.target.closest('.tile');
+    if(t && !t.contains(e.relatedTarget)){ reset(t); if(cur===t) cur=null; }
+  });
+  out.addEventListener('pointermove',e=>{
+    if(!cur) return; px=e.clientX; py=e.clientY;
+    if(raf) return;
+    raf=requestAnimationFrame(()=>{
+      raf=null; if(!cur) return;
+      const r=cur.getBoundingClientRect();
+      const x=(px-r.left)/r.width, y=(py-r.top)/r.height;
+      cur.style.transform=
+        `perspective(900px) rotateY(${(x-.5)*15}deg) rotateX(${(.5-y)*15}deg) translateY(-8px) scale(1.035)`;
+      const art=cur.querySelector('.art');
+      if(art){art.style.setProperty('--mx',(x*100)+'%');art.style.setProperty('--my',(y*100)+'%');}
+    });
+  },{passive:true});
+  function reset(t){t.classList.remove('lift');t.style.transform='';}
+})();
+
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on'); F.sport=c.dataset.v; render();}));
+q.addEventListener('input',e=>{F.q=e.target.value;render();});
+line.addEventListener('change',e=>{F.line=e.target.value;syncLines();render();});
+sort.addEventListener('change',e=>{F.sort=e.target.value;render();});
+/* ---- product line picker: built from the <select> options so the product
+       names live in exactly one place, with counts straight off the data ---- */
+function syncLines(){
+  document.querySelectorAll('.lchip').forEach(b=>b.classList.toggle('on', b.dataset.v===F.line));
+  const rail=document.getElementById('linegrid');
+  if(rail) rail.classList.toggle('filtering', !!F.line);   // dim the unpicked logos
+}
+(function(){
+  const grid=document.getElementById('linegrid');
+  if(!grid) return;
+  const counts={};
+  ITEMS.forEach(i=>{counts[i.p]=(counts[i.p]||0)+1;});
+  [...line.options].filter(o=>o.value).forEach(o=>{
+    const v=o.value, sl=lineSlug(v), n=counts[v]||0;
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='lchip lgc-'+sl;
+    b.dataset.v=v;
+    b.setAttribute('aria-label', v+' \u2014 '+n+' release'+(n===1?'':'s'));
+    const logo=LOGO_LINES.has(sl)
+      ? '<span class="llogo lg-'+sl+'"></span>'
+      : '<span class="llogo" style="display:grid;place-content:center;font-weight:800">'+esc(v)+'</span>';
+    b.innerHTML=logo+'<span class="lcount">'+n+' release'+(n===1?'':'s')+'</span>';
+    b.addEventListener('click',()=>{
+      F.line = (F.line===v) ? '' : v;   // tapping the active chip clears it
+      line.value=F.line;
+      syncLines();
+      render();
+      b.scrollIntoView({behavior:RM?'auto':'smooth',block:'nearest',inline:'center'});
+      const bar=document.getElementById('bar');
+      if(bar) bar.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});
+    });
+    grid.appendChild(b);
+  });
+
+  /* Edge fades + arrows reflect real scroll state; arrows stay hidden when the
+     whole rail already fits on one line. */
+  const prev=document.getElementById('railprev'), next=document.getElementById('railnext');
+  function railState(){
+    const max=grid.scrollWidth-grid.clientWidth;
+    const overflow=max>4;
+    grid.classList.toggle('atstart', grid.scrollLeft<=2);
+    grid.classList.toggle('atend', grid.scrollLeft>=max-2);
+    if(prev) prev.classList.toggle('show', overflow && grid.scrollLeft>2);
+    if(next) next.classList.toggle('show', overflow && grid.scrollLeft<max-2);
+  }
+  const nudge=dir=>grid.scrollBy({left:dir*Math.max(160,grid.clientWidth*.6),
+                                  behavior:RM?'auto':'smooth'});
+  if(prev) prev.addEventListener('click',()=>nudge(-1));
+  if(next) next.addEventListener('click',()=>nudge(1));
+  grid.addEventListener('scroll',railState,{passive:true});
+  addEventListener('resize',railState);
+  railState();
+})();
+
+render();
+</script><!-- wc-site-chrome --><script defer src="/checklists/_chrome.js?v=d665389c"></script></body></html>

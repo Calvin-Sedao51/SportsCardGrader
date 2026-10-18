@@ -97,7 +97,7 @@ export interface Verdict {
   reasoning: string
 }
 
-export type CatalogSourceName = 'tcgdex' | 'scryfall' | 'ygoprodeck' | 'optcg' | 'cardsight'
+export type CatalogSourceName = 'tcgdex' | 'scryfall' | 'ygoprodeck' | 'optcg' | 'cardsight' | 'sportsdb'
 
 // The vision identity looked up in a real card database (server/app/catalog/).
 export interface CatalogMatch {

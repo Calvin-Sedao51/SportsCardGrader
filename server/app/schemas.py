@@ -82,7 +82,7 @@ class Verdict(BaseModel):
                      "authenticity_risk", "low_value", "high_value"]
     reasoning: str
 
-CatalogSourceName = Literal["tcgdex", "scryfall", "ygoprodeck", "optcg", "cardsight"]
+CatalogSourceName = Literal["tcgdex", "scryfall", "ygoprodeck", "optcg", "cardsight", "sportsdb"]
 
 class CatalogMatch(BaseModel):
     """The vision identity looked up in a real card database (app/catalog/)."""

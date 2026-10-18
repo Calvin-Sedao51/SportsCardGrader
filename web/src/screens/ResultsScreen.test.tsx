@@ -370,7 +370,7 @@ test('a mid-confidence catalog match is labelled a possible match', () => {
 
 test('catalog source keys map to display names', () => {
   for (const [source, name] of [['ygoprodeck', 'YGOPRODeck'], ['optcg', 'OPTCG'],
-                                ['cardsight', 'CardSight']] as const) {
+                                ['cardsight', 'CardSight'], ['sportsdb', 'Local sports DB']] as const) {
     const { unmount } = renderResults({ ...base, catalog: { ...CATALOG, source }, catalog_error: null })
     expect(screen.getByText(`Verified · ${name}`)).toBeTruthy()
     unmount()
