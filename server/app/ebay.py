@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import time
 from typing import Optional
@@ -27,23 +28,38 @@ class EbayClient:
         self._basic = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
         self._token: Optional[str] = None
         self._token_expiry = 0.0
+        self._token_lock = asyncio.Lock()
         self._http = httpx.AsyncClient(base_url=self._base, transport=transport, timeout=15)
 
     async def _get_token(self) -> str:
         if self._token and time.monotonic() < self._token_expiry - 60:
             return self._token
-        resp = await self._http.post(
-            "/identity/v1/oauth2/token",
-            headers={"Authorization": f"Basic {self._basic}",
-                     "Content-Type": "application/x-www-form-urlencoded"},
-            data={"grant_type": "client_credentials",
-                  "scope": "https://api.ebay.com/oauth/api_scope"},
-        )
-        resp.raise_for_status()
-        payload = resp.json()
-        self._token = payload["access_token"]
-        self._token_expiry = time.monotonic() + payload.get("expires_in", 7200)
-        return self._token
+        # Concurrent requests can all see an expired/cleared token at once;
+        # the lock makes only one of them actually mint a new one — the rest
+        # wait and then read the token it just set, instead of each racing
+        # eBay's identity endpoint for their own.
+        async with self._token_lock:
+            if self._token and time.monotonic() < self._token_expiry - 60:
+                return self._token
+            resp = await self._http.post(
+                "/identity/v1/oauth2/token",
+                headers={"Authorization": f"Basic {self._basic}",
+                         "Content-Type": "application/x-www-form-urlencoded"},
+                data={"grant_type": "client_credentials",
+                      "scope": "https://api.ebay.com/oauth/api_scope"},
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+            self._token = payload["access_token"]
+            self._token_expiry = time.monotonic() + payload.get("expires_in", 7200)
+            return self._token
+
+    def _invalidate(self, token: str) -> None:
+        # Only clear the token if it's still the one that got the 401 — a
+        # concurrent request may have already refreshed it, and clearing that
+        # fresh token would undo its work for no reason.
+        if self._token == token:
+            self._token = None
 
     # 200 is the Browse API's max page size. With sort=price we sample the
     # cheapest `limit` matches, so a bigger page keeps raw_median from being
@@ -52,7 +68,6 @@ class EbayClient:
     # price-asc for the floor) is deliberately deferred.
     async def search(self, query: str, category: CardCategory = "sports",
                      limit: int = 200) -> list[CompListing]:
-        token = await self._get_token()
         # sort=price → ascending by price (Browse API; "-price" would be
         # descending). Without it eBay returns Best Match ordering, and
         # the cheapest true comps may never appear in the first `limit`.
@@ -60,12 +75,13 @@ class EbayClient:
         category_id = EBAY_CATEGORY.get(category)
         if category_id:
             params["category_ids"] = category_id
-        resp = await self._http.get(
-            "/buy/browse/v1/item_summary/search",
-            headers={"Authorization": f"Bearer {token}",
-                     "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"},  # change for non-US deployments
-            params=params,
-        )
+        resp, token = await self._search_request(params)
+        # eBay can revoke a client-credentials token before expires_in (key
+        # rotation, sandbox resets); without this the stale token stays
+        # cached for up to 2h. Re-mint and retry once; a second 401 is real.
+        if resp.status_code == 401:
+            self._invalidate(token)
+            resp, _ = await self._search_request(params)
         resp.raise_for_status()
         items = resp.json().get("itemSummaries", [])
         listings: list[CompListing] = []
@@ -82,3 +98,13 @@ class EbayClient:
             except (ValueError, TypeError, ValidationError):
                 continue
         return listings
+
+    async def _search_request(self, params: dict) -> tuple[httpx.Response, str]:
+        token = await self._get_token()
+        resp = await self._http.get(
+            "/buy/browse/v1/item_summary/search",
+            headers={"Authorization": f"Bearer {token}",
+                     "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"},  # change for non-US deployments
+            params=params,
+        )
+        return resp, token

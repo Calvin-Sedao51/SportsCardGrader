@@ -131,3 +131,9 @@ async def test_dry_run_broadcast_does_not_touch_network():
 def test_default_nodes_are_https():
     assert len(DEFAULT_NODES) >= 3
     assert all(n.startswith("https://") for n in DEFAULT_NODES)
+
+
+def test_default_nodes_exclude_dead_hosts():
+    # anyx.io has answered 502 since 2026-10; a dead default only adds a
+    # failover timeout to every read.
+    assert "https://anyx.io" not in DEFAULT_NODES

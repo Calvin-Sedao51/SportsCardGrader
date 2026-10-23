@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError } from '../api'
-import { useAuth } from '../auth/useAuth'
-import { publishCard } from '../binderApi'
+import { SIGN_IN_UNAVAILABLE_NOTE, useAuth } from '../auth/useAuth'
+import { hiveStatus, publishCard } from '../binderApi'
 import { getImages, listStaged, setStatus } from '../binderDb'
 import type { StagedCard } from '../binderTypes'
 import { verdictLabels } from '../labels'
@@ -10,6 +10,8 @@ import { usePublishPoller } from '../usePublishPoller'
 interface Props {
   onSelect: (entry: StagedCard) => void
 }
+
+const HIVE_UNAVAILABLE_NOTE = "Publishing to The Binder isn't set up on this server."
 
 function chipLabel(card: StagedCard, position?: number): string {
   switch (card.status) {
@@ -26,16 +28,27 @@ function isPublishable(card: StagedCard): boolean {
 }
 
 export default function HistoryScreen({ onSelect }: Props) {
-  const { user } = useAuth()
+  const { user, configured: authConfigured } = useAuth()
   const [staged, setStaged] = useState<StagedCard[] | null>(null)
   const [consentCard, setConsentCard] = useState<StagedCard | null>(null)
   const [syncConsent, setSyncConsent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Whether the server can post to Hive at all. Unreachable is assumed
+  // configured: being offline must never hide publishing (consent is durable
+  // and the poller re-submits later).
+  const [hiveConfigured, setHiveConfigured] = useState(true)
 
   const refresh = useCallback(() => {
     listStaged().then(setStaged).catch(() => setStaged([]))
   }, [])
   useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    let cancelled = false
+    hiveStatus()
+      .then(status => { if (!cancelled) setHiveConfigured(status.configured) })
+      .catch(() => { /* unreachable: keep assuming configured */ })
+    return () => { cancelled = true }
+  }, [])
   const jobs = usePublishPoller(staged, refresh)
 
   async function publishOne(card: StagedCard): Promise<void> {
@@ -105,6 +118,12 @@ export default function HistoryScreen({ onSelect }: Props) {
   }
 
   const unsynced = user ? staged.filter(isPublishable) : []
+  // A Publish button that can never succeed is replaced by the reason: the
+  // server has no Hive account, or publishing needs sign-in and this build
+  // has no sign-in provider.
+  const publishNote = !hiveConfigured ? HIVE_UNAVAILABLE_NOTE
+    : !user && !authConfigured ? SIGN_IN_UNAVAILABLE_NOTE
+    : null
 
   return (
     <div className="screen">
@@ -142,9 +161,9 @@ export default function HistoryScreen({ onSelect }: Props) {
                 <span className={`chip chip-${card.status}`}>
                   {chipLabel(card, jobs[card.record_id]?.position)}
                 </span>
-                {publishable && (
-                  <button onClick={() => setConsentCard(card)}>Publish to The Binder</button>
-                )}
+                {publishable && (publishNote
+                  ? <span className="caption">{publishNote}</span>
+                  : <button onClick={() => setConsentCard(card)}>Publish to The Binder</button>)}
                 {card.status === 'failed' && card.error && (
                   <span className="chip-error">{card.error}</span>
                 )}

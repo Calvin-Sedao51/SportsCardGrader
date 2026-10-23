@@ -336,3 +336,70 @@ test('non-slab response shows no slab badge', () => {
   renderResults(base)
   expect(screen.queryByText(/slab/i)).toBeNull()
 })
+
+
+// -- catalog verification (server/app/catalog) -------------------------------
+
+const CATALOG = {
+  source: 'scryfall' as const, catalog_id: 'abc123', name: 'Black Lotus',
+  set_name: 'Limited Edition Alpha', card_number: '232', year: '1993', rarity: 'Rare',
+  image_url: 'https://cards.scryfall.io/normal/front/b/d/bd8fa327.jpg',
+  url: 'https://scryfall.com/card/lea/232/black-lotus', match_confidence: 0.95,
+}
+
+test('a confident catalog match shows a Verified badge, rarity, thumbnail and source link', () => {
+  renderResults({ ...base, catalog: CATALOG, catalog_error: null })
+  expect(screen.getByText('Verified · Scryfall')).toBeTruthy()
+  expect(screen.getByText('Rare')).toBeTruthy()
+  const img = screen.getByRole('img', { name: 'Black Lotus' })
+  expect(img.getAttribute('src')).toBe(CATALOG.image_url)
+  expect(img.getAttribute('loading')).toBe('lazy')
+  const link = screen.getByRole('link', { name: /view on scryfall/i })
+  expect(link.getAttribute('href')).toBe(CATALOG.url)
+  expect(link.getAttribute('target')).toBe('_blank')
+  expect(link.getAttribute('rel')).toContain('noopener')
+})
+
+test('a mid-confidence catalog match is labelled a possible match', () => {
+  const catalog = { ...CATALOG, source: 'tcgdex' as const, match_confidence: 0.7, rarity: null }
+  renderResults({ ...base, catalog, catalog_error: null })
+  expect(screen.getByText('Possible match · TCGdex')).toBeTruthy()
+  expect(screen.queryByText(/verified/i)).toBeNull()
+  expect(screen.getByRole('link', { name: /view on tcgdex/i })).toBeTruthy()
+})
+
+test('catalog source keys map to display names', () => {
+  for (const [source, name] of [['ygoprodeck', 'YGOPRODeck'], ['optcg', 'OPTCG'],
+                                ['cardsight', 'CardSight']] as const) {
+    const { unmount } = renderResults({ ...base, catalog: { ...CATALOG, source }, catalog_error: null })
+    expect(screen.getByText(`Verified · ${name}`)).toBeTruthy()
+    unmount()
+  }
+})
+
+test('a weak catalog match (below 0.6) is not shown', () => {
+  const catalog = { ...CATALOG, match_confidence: 0.5 }
+  renderResults({ ...base, catalog, catalog_error: null })
+  expect(screen.queryByText(/verified|possible match/i)).toBeNull()
+  expect(screen.queryByRole('link', { name: /view on/i })).toBeNull()
+})
+
+test('a catalog match without image or url omits the thumbnail and link', () => {
+  const catalog = { ...CATALOG, image_url: null, url: null }
+  renderResults({ ...base, catalog, catalog_error: null })
+  expect(screen.getByText('Verified · Scryfall')).toBeTruthy()
+  expect(screen.queryByRole('img')).toBeNull()
+  expect(screen.queryByRole('link', { name: /view on/i })).toBeNull()
+})
+
+test('a catalog error shows a muted caption', () => {
+  renderResults({ ...base, catalog: null, catalog_error: 'Scryfall timed out' })
+  const caption = screen.getByText('Catalog check failed: Scryfall timed out')
+  expect(caption.className).toContain('caption')
+})
+
+test('no catalog fields (older history entries) render nothing new', () => {
+  renderResults(base)
+  expect(screen.queryByText(/verified|possible match|catalog check failed/i)).toBeNull()
+  expect(screen.queryByRole('img')).toBeNull()
+})

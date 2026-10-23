@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     ebay_client_secret: str = ""
     ebay_env: str = "production"  # or "sandbox"
     pricing_source: str = "ebay_active"  # registry key in app/pricing.py
+    # Card catalog lookup (app/catalog/): verifies the vision identity against
+    # free TCG databases. Sports needs a CardSight key; unset = AI-only identity.
+    catalog_enabled: bool = True
+    cardsight_api_key: str = ""
     anthropic_default_model: str = "claude-sonnet-5"
     openai_default_model: str = "gpt-5.1"
 
@@ -41,6 +45,10 @@ class Settings(BaseSettings):
     @property
     def ebay_configured(self) -> bool:
         return bool(self.ebay_client_id and self.ebay_client_secret)
+
+    @property
+    def cardsight_configured(self) -> bool:
+        return bool(self.cardsight_api_key)
 
     @property
     def auth_configured(self) -> bool:
