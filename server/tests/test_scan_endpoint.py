@@ -299,6 +299,33 @@ def test_verified_catalog_match_fills_identity(client, monkeypatch):
     assert identity["card_number"] == "4"
     assert identity["variant"] == "Holo 1st Edition"  # vision-only field kept
     assert body["comps"]["raw_count"] == 4 and body["catalog_error"] is None
+
+
+def test_catalog_number_correction_reprices_with_corrected_search_string(client, monkeypatch):
+    """A verified catalog correction to card_number must reach search_string
+    and get re-priced — the comps search already fired in parallel used the
+    vision-mis-read number, which would otherwise price (and persist) the
+    wrong card forever."""
+    queries_seen: list[str] = []
+    async def fake_vision(*a, **k): return POKEMON_VISION
+    async def fake_search(q, category="sports"):
+        queries_seen.append(q)
+        return LISTINGS if "#5" in q else []
+    async def lookup(identity): return catalog_match(card_number="5")
+    monkeypatch.setattr(scan_module, "run_vision", fake_vision)
+    monkeypatch.setattr(scan_module, "search_comps", fake_search)
+    monkeypatch.setattr(scan_module, "lookup_catalog", lookup)
+    body = post_scan(client, asking_price="30").json()
+    identity = body["vision"]["identity"]
+    assert identity["card_number"] == "5"
+    assert identity["search_string"] == "1999 Pokemon Base Set Charizard #5 Holo 1st Edition"
+    # Fired once with the stale (vision) query, once with the corrected one —
+    # and the response must reflect the second, correct search.
+    assert queries_seen == [
+        "1999 Pokemon Base Set Charizard #4 Holo 1st Edition",
+        "1999 Pokemon Base Set Charizard #5 Holo 1st Edition",
+    ]
+    assert body["comps"]["raw_count"] == 4
     # The shared fixture is never mutated by enrichment.
     assert POKEMON_VISION.identity.set_name == "Base Set"
 

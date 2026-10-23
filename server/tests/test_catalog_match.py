@@ -80,3 +80,39 @@ def test_apply_match_keeps_richer_ai_set_name():
 def test_apply_match_ignores_suggestions():
     assert apply_match(IDENTITY, match(0.7)) is IDENTITY
     assert apply_match(IDENTITY, None) is IDENTITY
+
+
+SPORTS_IDENTITY = Identity(subject="Luka Doncic", category="sports", year="2018",
+                           set_name="Panini Prizm", card_number="280",
+                           search_string="2018 Panini Prizm Luka Doncic #280",
+                           confidence=0.9)
+
+
+def sports_match(conf, **kw):
+    base = dict(source="cardsight", catalog_id="prizm-280", name="Luka Doncic",
+                set_name="Panini Prizm", card_number="289", year=None,
+                match_confidence=conf)
+    return CatalogMatch(**{**base, **kw})
+
+
+def test_apply_match_resyncs_search_string_card_number():
+    # A verified number correction must reach the string that actually prices
+    # the card, not just the display fields.
+    out = apply_match(SPORTS_IDENTITY, sports_match(0.95))
+    assert out.card_number == "289"
+    assert out.search_string == "2018 Panini Prizm Luka Doncic #289"
+
+
+def test_apply_match_resyncs_search_string_year():
+    out = apply_match(SPORTS_IDENTITY, sports_match(0.95, year="2019"))
+    assert out.year == "2019"
+    assert out.search_string == "2019 Panini Prizm Luka Doncic #289"
+
+
+def test_apply_match_set_only_correction_leaves_search_string():
+    # set_name is too free-form to substring-replace safely; a set-only
+    # correction (no number/year change) shouldn't touch search_string.
+    out = apply_match(SPORTS_IDENTITY, sports_match(0.95, card_number=None,
+                                                    set_name="Panini Prizm Draft Picks"))
+    assert out.set_name == "Panini Prizm Draft Picks"
+    assert out.search_string == SPORTS_IDENTITY.search_string

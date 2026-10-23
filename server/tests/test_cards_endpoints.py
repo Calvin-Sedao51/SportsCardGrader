@@ -4,7 +4,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from app.hive.client import HiveRpcError
+from app.hive.client import HiveRpcError, HiveUnavailable
 from app.hive.post_builder import build_post
 from app.hive.queue import PublishQueue
 from app.hive.record import card_permlink
@@ -127,6 +127,16 @@ def test_cards_feed_rejects_limit_outside_bridge_range(client, hive, limit):
 
 def test_cards_feed_bridge_error_is_502(client, hive):
     hive.fail_ranked = HiveRpcError(-32602, "Invalid parameters")
+    resp = client.get("/api/cards")
+    assert resp.status_code == 502
+    assert resp.json()["detail"] == "The Binder feed is temporarily unavailable."
+
+
+def test_cards_feed_all_nodes_down_is_502(client, hive):
+    # HiveUnavailable (every RPC node failed) is a different exception from
+    # HiveRpcError (one node answered with a JSON-RPC error) and must get the
+    # same clean 502, not an unhandled 500.
+    hive.fail_ranked = HiveUnavailable("all 5 hive nodes failed")
     resp = client.get("/api/cards")
     assert resp.status_code == 502
     assert resp.json()["detail"] == "The Binder feed is temporarily unavailable."

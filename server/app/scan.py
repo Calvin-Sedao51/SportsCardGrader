@@ -69,7 +69,15 @@ async def perform_scan(front: bytes, front_type: str, back: Optional[tuple[bytes
     # Pricing searches the vision search_string, so it doesn't wait on the catalog.
     (comps, verdict, _listings, comps_error), (catalog, catalog_error) = await asyncio.gather(
         price_vision(vision, asking_price), enrich_identity(vision.identity))
-    vision = vision.model_copy(update={"identity": apply_match(vision.identity, catalog)})
+    original_search_string = vision.identity.search_string
+    corrected_identity = apply_match(vision.identity, catalog)
+    vision = vision.model_copy(update={"identity": corrected_identity})
+    if corrected_identity.search_string != original_search_string:
+        # The catalog corrected the number/year the comps search above already
+        # used (fired in parallel, before the correction existed) — reprice
+        # against the corrected identity instead of serving a verdict (and
+        # persisting a record) for the wrong card.
+        comps, verdict, _listings, comps_error = await price_vision(vision, asking_price)
     return ScanResponse(vision=vision, comps=comps, comps_error=comps_error,
                         verdict=verdict, catalog=catalog, catalog_error=catalog_error)
 

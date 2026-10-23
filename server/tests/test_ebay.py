@@ -1,3 +1,4 @@
+import asyncio
 from typing import get_args
 
 import httpx
@@ -157,3 +158,27 @@ async def test_search_401_after_token_refresh_raises():
         await client.search("2018 Prizm Luka Doncic")
     assert exc_info.value.response.status_code == 401
     assert len(token_calls) == 2 and len(search_auths) == 2  # exactly one retry
+
+
+async def test_concurrent_searches_share_one_token_refresh():
+    """Several scans landing while the token is expired/uncached must not
+    each mint their own — one request should refresh, the rest should wait
+    and reuse it."""
+    token_calls: list = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/identity/v1/oauth2/token":
+            token_calls.append(1)
+            # Widen the race window so concurrent callers would overlap here
+            # without the lock.
+            await asyncio.sleep(0.01)
+            return httpx.Response(200, json={"access_token": "tok", "expires_in": 7200})
+        if request.url.path == "/buy/browse/v1/item_summary/search":
+            assert request.headers["Authorization"] == "Bearer tok"
+            return httpx.Response(200, json={"itemSummaries": []})
+        return httpx.Response(404)
+
+    client = EbayClient("id", "secret", "production",
+                        transport=httpx.MockTransport(handler))
+    await asyncio.gather(*(client.search(f"query {i}") for i in range(5)))
+    assert len(token_calls) == 1

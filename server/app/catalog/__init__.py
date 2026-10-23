@@ -50,7 +50,11 @@ def build_catalog_source(category: CardCategory,
 
 def apply_match(identity: Identity, match: Optional[CatalogMatch]) -> Identity:
     """Canonical set/number/year from a confident match; subject and variant
-    stay the AI's (parallels and the player's name as printed are vision-only)."""
+    stay the AI's (parallels and the player's name as printed are vision-only).
+    A corrected card_number/year is also swapped into search_string — that
+    string is what prices the card, now and on every future comps refresh, so
+    a verified correction that doesn't reach it would leave the card priced
+    against the wrong card forever."""
     if match is None or match.match_confidence < VERIFIED_THRESHOLD:
         return identity
     update = {}
@@ -63,4 +67,22 @@ def apply_match(identity: Identity, match: Optional[CatalogMatch]) -> Identity:
         update["card_number"] = match.card_number
     if match.year:
         update["year"] = match.year
+    if "card_number" in update or "year" in update:
+        update["search_string"] = _resync_search_string(identity, update)
     return identity.model_copy(update=update)
+
+
+def _resync_search_string(identity: Identity, update: dict) -> str:
+    """Best-effort swap of a corrected card_number/year into the AI's
+    free-text search_string, leaving everything else (set phrasing, grade,
+    qualifiers) untouched. set_name is too free-form to substring-replace
+    safely, so a set-only correction doesn't touch search_string."""
+    search_string = identity.search_string
+    if "card_number" in update and identity.card_number:
+        old_token, new_token = f"#{identity.card_number}", f"#{update['card_number']}"
+        if old_token != new_token and old_token in search_string:
+            search_string = search_string.replace(old_token, new_token)
+    if "year" in update and identity.year and identity.year != update["year"] \
+            and identity.year in search_string:
+        search_string = search_string.replace(identity.year, update["year"], 1)
+    return search_string

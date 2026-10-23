@@ -17,7 +17,7 @@ from pydantic import ValidationError
 
 from app import scan as scan_module
 from app.auth_routes import require_user
-from app.hive.client import HiveClient, HiveRpcError
+from app.hive.client import HiveClient, HiveRpcError, HiveUnavailable
 from app.hive.images import ImageInvalid, ImageUploadError, upload_image
 from app.hive.queue import PublishJob, PublishQueue
 from app.hive.record import (
@@ -210,7 +210,7 @@ async def list_cards(request: Request,
         posts = await state.client.get_ranked_posts(
             sort="created", tag=state.community, limit=limit,
             start_author=start_author, start_permlink=start_permlink)
-    except HiveRpcError as exc:
+    except (HiveRpcError, HiveUnavailable) as exc:
         logger.warning("bridge.get_ranked_posts failed for %s: %s", state.community, exc)
         raise HTTPException(502, "The Binder feed is temporarily unavailable.")
     cards = []
