@@ -9,6 +9,7 @@ import { usePublishPoller } from '../usePublishPoller'
 
 interface Props {
   onSelect: (entry: StagedCard) => void
+  onScan: () => void
 }
 
 const HIVE_UNAVAILABLE_NOTE = "Publishing to The Binder isn't set up on this server."
@@ -27,7 +28,7 @@ function isPublishable(card: StagedCard): boolean {
   return card.status === 'draft' && !card.legacy && card.response.vision.identity != null
 }
 
-export default function HistoryScreen({ onSelect }: Props) {
+export default function HistoryScreen({ onSelect, onScan }: Props) {
   const { user, configured: authConfigured } = useAuth()
   const [staged, setStaged] = useState<StagedCard[] | null>(null)
   const [consentCard, setConsentCard] = useState<StagedCard | null>(null)
@@ -111,8 +112,9 @@ export default function HistoryScreen({ onSelect }: Props) {
   if (staged === null) return <div className="screen"><p>Loading…</p></div>
   if (staged.length === 0) {
     return (
-      <div className="screen">
-        <p>No scans yet.</p>
+      <div className="screen empty-state">
+        <p>No scans yet. Every card you scan is saved here, on this device.</p>
+        <button onClick={onScan}>Scan your first card</button>
       </div>
     )
   }
@@ -158,7 +160,7 @@ export default function HistoryScreen({ onSelect }: Props) {
                 {card.askingPrice != null && <span className="ask">${card.askingPrice}</span>}
               </button>
               <div className="history-actions">
-                <span className={`chip chip-${card.status}`}>
+                <span className={`status-chip chip-${card.status}`}>
                   {chipLabel(card, jobs[card.record_id]?.position)}
                 </span>
                 {publishable && (publishNote

@@ -7,9 +7,11 @@
   --bg: #f8fafc;
   --surface: #ffffff;
   --text: #0f172a;
-  --muted: #64748b;
+  /* Muted and accent text must also clear 4.5:1 on the verdict tints below. */
+  --muted: #475569;
   --border: #e2e8f0;
-  --accent: #2563eb;
+  --accent: #1d4ed8; /* text: links, nav, tabs */
+  --accent-fill: #2563eb; /* filled buttons, white text on top */
   --accent-press: #1d4ed8;
   --on-accent: #ffffff;
 
@@ -37,8 +39,9 @@
     --text: #f1f5f9;
     --muted: #94a3b8;
     --border: #334155;
-    --accent: #3b82f6;
-    --accent-press: #2563eb;
+    --accent: #60a5fa;
+    --accent-fill: #2563eb;
+    --accent-press: #1d4ed8;
 
     --tint-green-bg: rgba(34, 197, 94, 0.16);
     --tint-green-text: #86efac;
@@ -67,6 +70,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
 /* Single centered column */
 .app {
   max-width: 480px;
@@ -77,16 +85,18 @@ body {
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
-/* Sticky header with title + nav */
+/* Sticky header: title + account on one row, nav on its own full-width row
+   below — four tabs plus the title never fit in a 375px phone side by side. */
 header {
   position: sticky;
   top: 0;
   z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+  gap: 4px 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 0;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
@@ -99,18 +109,27 @@ header h1 {
 }
 
 header nav {
+  order: 3;
+  width: 100%;
   display: flex;
-  gap: 4px;
 }
 
+/* Underline tabs: the current screen is marked, the rest stay quiet. */
 header nav button {
+  flex: 1;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 4px;
   background: transparent;
-  color: var(--accent);
+  color: var(--muted);
   border: none;
-  border-radius: 10px;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   font-weight: 600;
+}
+
+header nav button[aria-current='page'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 header nav button:active {
@@ -152,7 +171,7 @@ button {
   padding: 0 20px;
   border: none;
   border-radius: 12px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--on-accent);
   font-weight: 600;
   cursor: pointer;
@@ -199,8 +218,10 @@ button:focus-visible {
    surface background quietly letterboxes any leftover space. */
 .capture {
   aspect-ratio: 2.5 / 3.5;
-  max-height: 55svh;
+  max-height: 44svh;
   display: flex;
+  flex-direction: column;
+  gap: 6px;
   align-items: center;
   justify-content: center;
   padding: 8px;
@@ -216,12 +237,25 @@ button:focus-visible {
 
 .capture.small {
   aspect-ratio: auto;
-  min-height: 96px;
+  min-height: 64px;
+}
+
+.capture svg {
+  width: 40px;
+  height: 40px;
+  color: var(--accent);
+}
+
+.capture-hint {
+  max-width: 24ch;
+  font-size: 0.875rem;
+  font-weight: 400;
 }
 
 .capture img {
   max-width: 100%;
-  max-height: 100%;
+  min-height: 0;
+  flex: 1;
   object-fit: contain;
   border-radius: 8px;
 }
@@ -255,8 +289,8 @@ button:focus-visible {
 }
 
 .chip[aria-pressed='true'] {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
   color: var(--on-accent);
 }
 
@@ -279,6 +313,11 @@ button:focus-visible {
 
 .scan-cta button {
   width: 100%;
+}
+
+.scan-cta .caption {
+  margin: 0 0 8px;
+  text-align: center;
 }
 
 /* Verdict hero: the money moment — full-width tinted panel, first on screen.
@@ -435,6 +474,10 @@ button:focus-visible {
   width: 100%;
   padding: 12px 16px;
   border-radius: 12px;
+}
+
+.authenticity > p:first-child {
+  font-weight: 700;
 }
 
 .risk-caution {
@@ -602,7 +645,7 @@ button:focus-visible {
   width: 28px;
   height: 28px;
   border: 3px solid var(--border);
-  border-top-color: var(--accent);
+  border-top-color: var(--accent-fill);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -621,8 +664,9 @@ button:focus-visible {
   }
 }
 
-/* History: tappable rows with separators */
-.history {
+/* History: tappable rows with separators. `.screen` prefix outranks the
+   generic `.screen ul` indent. */
+.screen .history {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -685,7 +729,9 @@ button:focus-visible {
   font-size: 0.85rem;
 }
 
-.chip {
+/* Publish status pill — a label, not a control, so no tap-target sizing
+   (the price .chip above is the button). */
+.status-chip {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 2px 8px;
@@ -728,6 +774,31 @@ button:focus-visible {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   display: grid;
   gap: 10px;
+}
+
+/* Binder feed rows lead with the card photo. */
+.history-row.with-thumb {
+  grid-template-columns: 44px 1fr auto;
+}
+
+.history-row .thumb {
+  grid-row: span 2;
+  width: 44px;
+  aspect-ratio: 2.5 / 3.5;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--border);
+}
+
+/* Empty states: say what goes here and offer the next step. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
 }
 
 /* Binder detail view */

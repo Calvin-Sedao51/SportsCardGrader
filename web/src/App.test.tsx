@@ -379,3 +379,12 @@ test('failed scan shows dismissible error and stays on scan view', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
   expect(screen.queryByRole('alert')).toBeNull()
 })
+
+test('nav marks the current screen', () => {
+  saveSettings({ provider: 'anthropic', apiKey: 'sk-test' })
+  render(<App />)
+  expect(screen.getByRole('button', { name: 'Scan' }).getAttribute('aria-current')).toBe('page')
+  fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  expect(screen.getByRole('button', { name: 'Settings' }).getAttribute('aria-current')).toBe('page')
+  expect(screen.getByRole('button', { name: 'Scan' }).getAttribute('aria-current')).toBeNull()
+})

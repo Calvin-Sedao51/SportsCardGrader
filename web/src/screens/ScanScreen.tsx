@@ -14,6 +14,14 @@ function useObjectUrl(file: File | null) {
   return url
 }
 
+const CameraIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </svg>
+)
+
 export default function ScanScreen({ onSubmit, busy }: Props) {
   const [front, setFront] = useState<File | null>(null)
   const [back, setBack] = useState<File | null>(null)
@@ -45,7 +53,19 @@ export default function ScanScreen({ onSubmit, busy }: Props) {
   return (
     <div className="screen">
       <label className="capture">
-        {frontUrl ? <img src={frontUrl} alt="card front" /> : 'Tap to photograph card front'}
+        {frontUrl ? (
+          <>
+            <img src={frontUrl} alt="card front" />
+            <span className="capture-hint">Tap to retake</span>
+          </>
+        ) : (
+          <>
+            <CameraIcon />
+            Tap to photograph card front
+            {/* A bad photo still costs a paid AI call — coach before the shot. */}
+            <span className="capture-hint">Lay it flat in good light and fill the frame</span>
+          </>
+        )}
         <input type="file" accept="image/*" capture="environment" hidden
                onChange={e => setFront(e.target.files?.[0] ?? null)} />
       </label>
@@ -74,6 +94,7 @@ export default function ScanScreen({ onSubmit, busy }: Props) {
                onChange={e => { setAsk(e.target.value); setChip(null) }} />
       </div>
       <div className="scan-cta">
+        {!front && <p className="caption">Add a front photo to scan</p>}
         <button disabled={!front || busy}
                 onClick={() => onSubmit(front!, back, askingPrice)}>
           {busy ? 'Scanning…' : 'Scan card'}

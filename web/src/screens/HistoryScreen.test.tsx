@@ -57,15 +57,18 @@ function blob(text = 'img') {
   return new Blob([text], { type: 'image/jpeg' })
 }
 
-test('empty state shows "No scans yet."', async () => {
-  render(<HistoryScreen onSelect={() => {}} />)
+test('empty state shows "No scans yet." and a scan CTA', async () => {
+  const onScan = vi.fn()
+  render(<HistoryScreen onScan={onScan} onSelect={() => {}} />)
   expect(await screen.findByText(/no scans yet/i)).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /scan your first card/i }))
+  expect(onScan).toHaveBeenCalledOnce()
 })
 
 test('renders staged rows and onSelect fires with the card', async () => {
   await stageScan(response, 50, blob(), null)
   const onSelect = vi.fn()
-  render(<HistoryScreen onSelect={onSelect} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={onSelect} />)
   const row = await screen.findByText(/Luka Doncic/)
   expect(screen.getByText('Undervalued')).toBeTruthy() // human label, not raw enum
   expect(screen.getByText('Draft')).toBeTruthy()
@@ -84,7 +87,7 @@ test('publish flow: consent dialog, then queued chip', async () => {
     job_id: card.record_id, permlink: 'card-luka', status: 'queued',
     position: 2, eta_seconds: 300, hive_url: null, last_error: null,
   })
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
   const dialog = await screen.findByRole('dialog')
   expect(dialog.textContent).toMatch(/public/i)
@@ -98,7 +101,7 @@ test('publish flow: consent dialog, then queued chip', async () => {
 
 test('consent can be declined', async () => {
   await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
   fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
   expect(screen.queryByRole('dialog')).toBeNull()
@@ -108,7 +111,7 @@ test('consent can be declined', async () => {
 test('signed out: publish asks for sign-in and never auto-queues the card', async () => {
   // useAuth defaults to signed_out in beforeEach
   const card = await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   fireEvent.click(await screen.findByRole('button', { name: /publish to the binder/i }))
   fireEvent.click(await screen.findByRole('button', { name: /^publish$/i }))
   expect(await screen.findByText(/sign in with google to publish/i)).toBeTruthy()
@@ -123,7 +126,7 @@ test('signed out: publish asks for sign-in and never auto-queues the card', asyn
 test('legacy rows cannot be published', async () => {
   const card = await stageScan(response, null, blob(), null)
   await setStatus(card.record_id, { legacy: true })
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   await screen.findByText(/Luka Doncic/)
   expect(screen.queryByRole('button', { name: /publish to the binder/i })).toBeNull()
 })
@@ -133,7 +136,7 @@ test('published rows link to the hive post', async () => {
   await setStatus(card.record_id, {
     status: 'published', hive_url: 'https://peakd.com/@thebinder/card-luka',
   })
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   const link = await screen.findByRole('link', { name: /view on hive/i })
   expect(link.getAttribute('href')).toBe('https://peakd.com/@thebinder/card-luka')
 })
@@ -146,7 +149,7 @@ test('poller promotes queued cards when the server confirms', async () => {
     position: 0, eta_seconds: 0,
     hive_url: 'https://peakd.com/@thebinder/card-luka', last_error: null,
   })
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   await screen.findByText('Published')
   await waitFor(async () =>
     expect((await listStaged())[0].status).toBe('published'))
@@ -157,7 +160,7 @@ test('poller promotes queued cards when the server confirms', async () => {
 
 test('signed out: no sync button', async () => {
   await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   await screen.findByText(/Luka Doncic/)
   expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
 })
@@ -170,7 +173,7 @@ test('signed in: sync attaches my user id to every draft and publishes after one
   mocks.publishCard.mockImplementation(async (card: { record_id: string }) => ({
     job_id: card.record_id, permlink: `card-${card.record_id}`, status: 'queued',
     position: 1, eta_seconds: 0, hive_url: null, last_error: null }))
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   fireEvent.click(await screen.findByRole('button', { name: /sync my scans/i }))
   const dialog = await screen.findByRole('dialog', { name: /sync/i })
   expect(dialog.textContent).toMatch(/2 scans/i)
@@ -192,7 +195,7 @@ test('signed in with nothing publishable: no sync button', async () => {
                                  signIn: vi.fn(), signOut: vi.fn() })
   const card = await stageScan(response, null, blob(), null)
   await setStatus(card.record_id, { status: 'published', hive_url: 'https://peakd.com/@x/y' })
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   await screen.findByText(/Luka Doncic/)
   expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
 })
@@ -203,7 +206,7 @@ test('signed out with sign-in not configured: note replaces the Publish button',
   auth.useAuth.mockReturnValue({ status: 'signed_out', user: null, error: null, configured: false,
                                  signIn: vi.fn(), signOut: vi.fn() })
   await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   await screen.findByText(/Luka Doncic/)
   expect(screen.getByText(/sign-in isn't set up on this server yet/i)).toBeTruthy()
   expect(screen.queryByRole('button', { name: /publish to the binder/i })).toBeNull()
@@ -217,7 +220,7 @@ function mockHiveStatus(body: unknown, status = 200) {
 test('hive not configured on the server: note replaces the Publish button', async () => {
   const fetchMock = mockHiveStatus({ configured: false })
   await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   expect(await screen.findByText(/publishing to the binder isn't set up on this server/i)).toBeTruthy()
   expect(screen.queryByRole('button', { name: /publish to the binder/i })).toBeNull()
   expect(fetchMock).toHaveBeenCalledOnce()
@@ -228,7 +231,7 @@ test('hive not configured on the server: note replaces the Publish button', asyn
 test('hive configured on the server: Publish button as usual', async () => {
   const fetchMock = mockHiveStatus({ configured: true, account: 'thebinder' })
   await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   expect(await screen.findByRole('button', { name: /publish to the binder/i })).toBeTruthy()
   expect(screen.queryByText(/isn't set up on this server/i)).toBeNull()
   fetchMock.mockRestore()
@@ -237,7 +240,7 @@ test('hive configured on the server: Publish button as usual', async () => {
 test('hive status unreachable: assume configured so offline never hides publishing', async () => {
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'))
   await stageScan(response, null, blob(), null)
-  render(<HistoryScreen onSelect={() => {}} />)
+  render(<HistoryScreen onScan={() => {}} onSelect={() => {}} />)
   expect(await screen.findByRole('button', { name: /publish to the binder/i })).toBeTruthy()
   await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
   expect(screen.queryByText(/isn't set up on this server/i)).toBeNull()

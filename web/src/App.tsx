@@ -122,10 +122,12 @@ function App() {
         <nav>
           {/* Disabled while scanning: navigating mid-scan would teleport the
               user away and orphan the in-flight result. */}
-          <button disabled={busy} onClick={() => setView('scan')}>Scan</button>
-          <button disabled={busy} onClick={() => setView('binder')}>Binder</button>
-          <button disabled={busy} onClick={() => setView('history')}>History</button>
-          <button disabled={busy} onClick={() => setView('settings')}>Settings</button>
+          {(['scan', 'binder', 'history', 'settings'] as const).map(v => (
+            <button key={v} disabled={busy} onClick={() => setView(v)}
+                    aria-current={view === v ? 'page' : undefined}>
+              {v[0].toUpperCase() + v.slice(1)}
+            </button>
+          ))}
         </nav>
         <AuthButton />
       </header>
@@ -164,6 +166,7 @@ function App() {
 
       {view === 'history' && (
         <HistoryScreen
+          onScan={() => setView('scan')}
           onSelect={e => {
             setLastResult(e.response)
             setLastAskingPrice(e.askingPrice ?? null)
