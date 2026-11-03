@@ -1,0 +1,88 @@
+{
+ "data": [
+  {
+   "id": 89631139,
+   "name": "Blue-Eyes White Dragon",
+   "ygoprodeck_url": "https://ygoprodeck.com/card/blue-eyes-white-dragon-7485",
+   "card_sets": [
+    {
+     "set_name": "2016 Mega-Tins",
+     "set_code": "CT13-EN008",
+     "set_rarity": "Ultra Rare"
+    },
+    {
+     "set_name": "2017 Mega-Tins",
+     "set_code": "CT14-EN002",
+     "set_rarity": "Secret Rare"
+    },
+    {
+     "set_name": "2022 Tin of the Pharaoh's Gods",
+     "set_code": "MP22-EN266",
+     "set_rarity": "Prismatic Secret Rare"
+    },
+    {
+     "set_name": "25th Anniversary Tin: Dueling Mirrors",
+     "set_code": "MP24-EN001",
+     "set_rarity": "Quarter Century Secret Rare"
+    },
+    {
+     "set_name": "25th Anniversary Ultimate Kaiba Set",
+     "set_code": "KC01-EN000",
+     "set_rarity": "Quarter Century Secret Rare"
+    },
+    {
+     "set_name": "25th Anniversary Ultimate Kaiba Set",
+     "set_code": "KC01-EN004",
+     "set_rarity": "Ultra Rare"
+    },
+    {
+     "set_name": "Legend of Blue Eyes White Dragon",
+     "set_code": "LOB-001",
+     "set_rarity": "Ultra Rare"
+    },
+    {
+     "set_name": "Legend of Blue Eyes White Dragon",
+     "set_code": "LOB-E001",
+     "set_rarity": "Ultra Rare"
+    },
+    {
+     "set_name": "Legend of Blue Eyes White Dragon",
+     "set_code": "LOB-EN001",
+     "set_rarity": "Ultra Rare"
+    }
+   ],
+   "card_images": [
+    {
+     "image_url": "https://images.ygoprodeck.com/images/cards/89631139.jpg"
+    }
+   ]
+  },
+  {
+   "id": 30397786,
+   "name": "Blue-Eyes White Dragon, the White Phantom Beast",
+   "ygoprodeck_url": "https://ygoprodeck.com/card/blue-eyes-white-dragon-the-white-phantom-beast-15642",
+   "card_sets": [
+    {
+     "set_name": "Magnificent Maestros",
+     "set_code": "MAMS-EN001",
+     "set_rarity": "Grand Master Rare"
+    },
+    {
+     "set_name": "Magnificent Maestros",
+     "set_code": "MAMS-EN001",
+     "set_rarity": "Starlight Rare"
+    },
+    {
+     "set_name": "Magnificent Maestros",
+     "set_code": "MAMS-EN001",
+     "set_rarity": "Ultra Rare"
+    }
+   ],
+   "card_images": [
+    {
+     "image_url": "https://images.ygoprodeck.com/images/cards/30397786.jpg"
+    }
+   ]
+  }
+ ]
+}

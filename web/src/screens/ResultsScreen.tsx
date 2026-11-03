@@ -1,5 +1,5 @@
 import { verdictLabels } from '../labels'
-import type { CardCategory, CompsSummary, ScanResponse, Verdict } from '../types'
+import type { CardCategory, CatalogMatch, CatalogSourceName, CompsSummary, ScanResponse, Verdict } from '../types'
 
 interface Props {
   result: ScanResponse
@@ -35,6 +35,41 @@ function SoldCompsLink({ searchString, category }: { searchString: string; categ
   )
 }
 
+const catalogSourceNames: Record<CatalogSourceName, string> = {
+  scryfall: 'Scryfall',
+  tcgdex: 'TCGdex',
+  ygoprodeck: 'YGOPRODeck',
+  optcg: 'OPTCG',
+  cardsight: 'CardSight',
+}
+
+// Keep in sync with VERIFIED_THRESHOLD in server/app/catalog/__init__.py.
+const CATALOG_VERIFIED = 0.8
+const CATALOG_POSSIBLE = 0.6
+
+// The identity cross-checked against a real card database: a fact chip like
+// the slab badge, plus the catalog's own image and page. Below the
+// "possible" threshold the match is noise, so nothing is shown.
+function CatalogMatchBlock({ catalog }: { catalog: CatalogMatch }) {
+  if (catalog.match_confidence < CATALOG_POSSIBLE) return null
+  const source = catalogSourceNames[catalog.source]
+  const label = catalog.match_confidence >= CATALOG_VERIFIED ? 'Verified' : 'Possible match'
+  return (
+    <div className="catalog-match">
+      {catalog.image_url && (
+        <img className="catalog-thumb" src={catalog.image_url} alt={catalog.name} loading="lazy" />
+      )}
+      <div className="catalog-detail">
+        <span className="catalog-badge">{`${label} · ${source}`}</span>
+        {catalog.rarity && <span className="subtle">{catalog.rarity}</span>}
+        {catalog.url && (
+          <a href={catalog.url} target="_blank" rel="noopener noreferrer">View on {source}</a>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Evidence caption: real counts beat a generic source line. Slab scans price
 // against graded comps only (raw_count 0), so credit the graded pool then.
 function evidenceCaption(comps: CompsSummary): string | null {
@@ -66,7 +101,7 @@ function DeltaLine({ verdict, askingPrice }: { verdict: Verdict; askingPrice: nu
 }
 
 export default function ResultsScreen({ result, askingPrice, onRescan }: Props) {
-  const { vision, comps, comps_error, verdict } = result
+  const { vision, comps, comps_error, verdict, catalog, catalog_error } = result
 
   if (!vision.photo_ok) {
     return (
@@ -149,6 +184,8 @@ export default function ResultsScreen({ result, askingPrice, onRescan }: Props) 
           {identity.confidence < 0.5 && (
             <p className="warning">Identification uncertain — price may not be reliable</p>
           )}
+          {catalog && <CatalogMatchBlock catalog={catalog} />}
+          {catalog_error && <p className="caption">Catalog check failed: {catalog_error}</p>}
         </section>
       )}
 

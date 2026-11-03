@@ -54,3 +54,9 @@ htmlcov/
 .pytest_cache/
 # Claude Code personal settings (not for the open-source repo)
 .claude/settings.local.json
+
+# Browser automation (e2e/): minted sessions, test users, run output
+e2e/.auth/
+e2e/.env
+e2e/artifacts/
+.playwright-cli/

@@ -82,8 +82,27 @@ class Verdict(BaseModel):
                      "authenticity_risk", "low_value", "high_value"]
     reasoning: str
 
+CatalogSourceName = Literal["tcgdex", "scryfall", "ygoprodeck", "optcg", "cardsight"]
+
+class CatalogMatch(BaseModel):
+    """The vision identity looked up in a real card database (app/catalog/)."""
+    source: CatalogSourceName
+    catalog_id: str
+    name: str
+    set_name: str
+    card_number: Optional[str] = None
+    year: Optional[str] = None
+    rarity: Optional[str] = None
+    image_url: Optional[str] = None
+    url: Optional[str] = None
+    # >= catalog.VERIFIED_THRESHOLD: canonical set/number were applied to the
+    # identity; below it the match is only a suggestion.
+    match_confidence: float = Field(ge=0, le=1)
+
 class ScanResponse(BaseModel):
     vision: VisionResult
     comps: Optional[CompsSummary] = None
     comps_error: Optional[str] = None
     verdict: Optional[Verdict] = None
+    catalog: Optional[CatalogMatch] = None
+    catalog_error: Optional[str] = None

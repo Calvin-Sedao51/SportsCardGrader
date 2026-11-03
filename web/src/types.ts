@@ -97,11 +97,32 @@ export interface Verdict {
   reasoning: string
 }
 
+export type CatalogSourceName = 'tcgdex' | 'scryfall' | 'ygoprodeck' | 'optcg' | 'cardsight'
+
+// The vision identity looked up in a real card database (server/app/catalog/).
+export interface CatalogMatch {
+  source: CatalogSourceName
+  catalog_id: string
+  name: string
+  set_name: string
+  card_number: string | null
+  year: string | null
+  rarity: string | null
+  image_url: string | null
+  url: string | null
+  // >= 0.8: the server applied canonical set/number to the identity ("verified");
+  // below that the match is only a suggestion.
+  match_confidence: number // 0..1
+}
+
 export interface ScanResponse {
   vision: VisionResult
   comps: CompsSummary | null
   comps_error: string | null
   verdict: Verdict | null
+  // Optional (not `| null`) so history entries saved before catalog lookups still type-check.
+  catalog?: CatalogMatch | null
+  catalog_error?: string | null
 }
 
 // Client-only types

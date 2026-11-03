@@ -21,7 +21,10 @@ vi.mock('../binderApi', async importOriginal => ({
 // useAuth is mocked file-wide (default: signed out) so publish-flow tests run
 // deterministically; individual tests override the return value.
 const auth = vi.hoisted(() => ({ useAuth: vi.fn() }))
-vi.mock('../auth/useAuth', () => ({ useAuth: auth.useAuth }))
+vi.mock('../auth/useAuth', async importOriginal => ({
+  ...(await importOriginal<typeof import('../auth/useAuth')>()),
+  useAuth: auth.useAuth,
+}))
 
 const ME = { id: 'u1', email: null, display_name: 'Calvin', hive_display_key: 'binder-abcdef12',
              created_at: '' }
@@ -192,4 +195,51 @@ test('signed in with nothing publishable: no sync button', async () => {
   render(<HistoryScreen onSelect={() => {}} />)
   await screen.findByText(/Luka Doncic/)
   expect(screen.queryByRole('button', { name: /sync my scans/i })).toBeNull()
+})
+
+// -- server capability notes --------------------------------------------------
+
+test('signed out with sign-in not configured: note replaces the Publish button', async () => {
+  auth.useAuth.mockReturnValue({ status: 'signed_out', user: null, error: null, configured: false,
+                                 signIn: vi.fn(), signOut: vi.fn() })
+  await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  await screen.findByText(/Luka Doncic/)
+  expect(screen.getByText(/sign-in isn't set up on this server yet/i)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /publish to the binder/i })).toBeNull()
+})
+
+function mockHiveStatus(body: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+    Promise.resolve(new Response(JSON.stringify(body), { status })))
+}
+
+test('hive not configured on the server: note replaces the Publish button', async () => {
+  const fetchMock = mockHiveStatus({ configured: false })
+  await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  expect(await screen.findByText(/publishing to the binder isn't set up on this server/i)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /publish to the binder/i })).toBeNull()
+  expect(fetchMock).toHaveBeenCalledOnce()
+  expect(String(fetchMock.mock.calls[0][0])).toContain('/api/hive/status')
+  fetchMock.mockRestore()
+})
+
+test('hive configured on the server: Publish button as usual', async () => {
+  const fetchMock = mockHiveStatus({ configured: true, account: 'thebinder' })
+  await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  expect(await screen.findByRole('button', { name: /publish to the binder/i })).toBeTruthy()
+  expect(screen.queryByText(/isn't set up on this server/i)).toBeNull()
+  fetchMock.mockRestore()
+})
+
+test('hive status unreachable: assume configured so offline never hides publishing', async () => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'))
+  await stageScan(response, null, blob(), null)
+  render(<HistoryScreen onSelect={() => {}} />)
+  expect(await screen.findByRole('button', { name: /publish to the binder/i })).toBeTruthy()
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+  expect(screen.queryByText(/isn't set up on this server/i)).toBeNull()
+  fetchMock.mockRestore()
 })

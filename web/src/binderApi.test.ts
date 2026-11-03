@@ -92,9 +92,15 @@ test('read helpers hit the expected endpoints', async () => {
   expect(mock.mock.calls[2][1]?.method).toBe('POST')
 })
 
-test('hiveStatus reports unconfigured on network failure', async () => {
+test('hiveStatus returns the server payload', async () => {
+  mockFetch({ configured: true, account: 'thebinder' }, 200)
+  expect(await hiveStatus()).toEqual({ configured: true, account: 'thebinder' })
+})
+
+test('hiveStatus rejects on network failure so callers choose their own fallback', async () => {
+  // Unreachable is not the same as "no Hive": HistoryScreen keeps Publish visible.
   vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'))
-  expect(await hiveStatus()).toEqual({ configured: false })
+  await expect(hiveStatus()).rejects.toThrow(/could not reach the server/i)
 })
 
 test('resumePendingPublishes re-submits consented drafts', async () => {

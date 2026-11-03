@@ -42,7 +42,7 @@ test('starts signed out, reporting whether sign-in is configured', () => {
 })
 
 test('signIn: Google credential -> app token -> Hive presence -> signed in', async () => {
-  mocks.googleSignIn.mockImplementation(async (cb: (c: string) => void) => { cb('google.id.token'); return true })
+  mocks.googleSignIn.mockImplementation(async (cb: (c: string) => void) => { cb('google.id.token'); return 'shown' })
   const { result } = renderHook(() => useAuth())
   await act(() => result.current.signIn())
   await waitFor(() => expect(result.current.status).toBe('signed_in'))
@@ -54,7 +54,7 @@ test('signIn: Google credential -> app token -> Hive presence -> signed in', asy
 
 test('signIn when the provider is not configured leaves the user signed out with a message', async () => {
   mocks.isGoogleSignInConfigured.mockReturnValue(false)
-  mocks.googleSignIn.mockResolvedValue(false)
+  mocks.googleSignIn.mockResolvedValue('unavailable')
   const { result } = renderHook(() => useAuth())
   await act(() => result.current.signIn())
   expect(result.current.status).toBe('signed_out')
@@ -62,9 +62,35 @@ test('signIn when the provider is not configured leaves the user signed out with
   expect(mocks.loginWithGoogle).not.toHaveBeenCalled()
 })
 
+test('a suppressed One Tap drops back to signed out with a pop-up hint', async () => {
+  mocks.googleSignIn.mockResolvedValue('not_shown')
+  const { result } = renderHook(() => useAuth())
+  await act(() => result.current.signIn())
+  expect(result.current.status).toBe('signed_out')
+  expect(result.current.error).toBe("Google sign-in didn't open. Check pop-up settings and try again.")
+  expect(mocks.loginWithGoogle).not.toHaveBeenCalled()
+})
+
+test('a late not_shown never overrides a sign-in that already completed', async () => {
+  // FedCM may skip the display moment: the credential lands first, then the
+  // timeout fires. The signed-in session must survive that.
+  let settle: (o: string) => void = () => {}
+  mocks.googleSignIn.mockImplementation((cb: (c: string) => void) => {
+    cb('google.id.token')
+    return new Promise<string>(resolve => { settle = resolve })
+  })
+  const { result } = renderHook(() => useAuth())
+  const pending = act(() => result.current.signIn())
+  await waitFor(() => expect(result.current.status).toBe('signed_in'))
+  settle('not_shown')
+  await pending
+  expect(result.current.status).toBe('signed_in')
+  expect(result.current.error).toBeNull()
+})
+
 test('a rejected credential surfaces the server message and clears the session', async () => {
   const { ApiError } = await import('../api')
-  mocks.googleSignIn.mockImplementation(async (cb: (c: string) => void) => { cb('bad'); return true })
+  mocks.googleSignIn.mockImplementation(async (cb: (c: string) => void) => { cb('bad'); return 'shown' })
   mocks.loginWithGoogle.mockRejectedValue(new ApiError('Google sign-in was rejected: bad aud'))
   const { result } = renderHook(() => useAuth())
   await act(() => result.current.signIn())

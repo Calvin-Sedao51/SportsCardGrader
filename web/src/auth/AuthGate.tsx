@@ -1,10 +1,18 @@
 import type { ReactNode } from 'react'
-import { useAuth } from './useAuth'
+import { SIGN_IN_UNAVAILABLE_NOTE, useAuth } from './useAuth'
 
-// Renders children only for a signed-in user; otherwise a sign-in prompt.
+// Renders children only for a signed-in user; otherwise a sign-in prompt, or
+// a short note when sign-in is not configured on this build.
 export default function AuthGate({ prompt, children }: { prompt: string; children: ReactNode }) {
-  const { status, error, signIn } = useAuth()
+  const { status, error, configured, signIn } = useAuth()
   if (status === 'signed_in') return <>{children}</>
+  if (!configured) {
+    return (
+      <div className="auth-gate">
+        <p className="caption">{SIGN_IN_UNAVAILABLE_NOTE}</p>
+      </div>
+    )
+  }
   return (
     <div className="auth-gate">
       <p>{prompt}</p>

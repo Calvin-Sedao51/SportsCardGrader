@@ -11,13 +11,13 @@ from datetime import datetime, timezone
 from typing import Annotated, Callable, Optional
 
 import httpx
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app import scan as scan_module
 from app.auth_routes import require_user
-from app.hive.client import HiveClient
+from app.hive.client import HiveClient, HiveRpcError, HiveUnavailable
 from app.hive.images import ImageInvalid, ImageUploadError, upload_image
 from app.hive.queue import PublishJob, PublishQueue
 from app.hive.record import (
@@ -192,7 +192,10 @@ def _parse_card_post(post: dict) -> Optional[dict]:
 
 
 @router.get("/api/cards")
-async def list_cards(request: Request, limit: int = 20, start_author: str = "",
+async def list_cards(request: Request,
+                     # Hivemind caps get_ranked_posts at 20 and answers a
+                     # JSON-RPC error past it, so the bound is enforced here.
+                     limit: int = Query(20, ge=1, le=20), start_author: str = "",
                      start_permlink: str = "", all_authors: bool = False,
                      owner: str = ""):
     """The community feed; `owner=<hive_display_key>` narrows it to one
@@ -203,9 +206,13 @@ async def list_cards(request: Request, limit: int = 20, start_author: str = "",
     cached = state.feed_cache.get(key)
     if cached and cached[0] > time.monotonic():
         return cached[1]
-    posts = await state.client.get_ranked_posts(
-        sort="created", tag=state.community, limit=limit,
-        start_author=start_author, start_permlink=start_permlink)
+    try:
+        posts = await state.client.get_ranked_posts(
+            sort="created", tag=state.community, limit=limit,
+            start_author=start_author, start_permlink=start_permlink)
+    except (HiveRpcError, HiveUnavailable) as exc:
+        logger.warning("bridge.get_ranked_posts failed for %s: %s", state.community, exc)
+        raise HTTPException(502, "The Binder feed is temporarily unavailable.")
     cards = []
     for post in posts:
         entry = _parse_card_post(post)

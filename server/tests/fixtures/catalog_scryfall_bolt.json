@@ -1,0 +1,184 @@
+{
+ "object": "list",
+ "data": [
+  {
+   "id": "f58dba4f-1abb-47a3-a684-29c32bab95c0",
+   "name": "Emeritus of Conflict // Lightning Bolt",
+   "set_name": "Secrets of Strixhaven",
+   "collector_number": "113",
+   "released_at": "2026-04-24",
+   "rarity": "mythic",
+   "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.jpg?1783903670",
+    "normal": "https://cards.scryfall.io/normal/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.jpg?1783903670",
+    "large": "https://cards.scryfall.io/large/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.jpg?1783903670",
+    "png": "https://cards.scryfall.io/png/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.png?1783903670",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.jpg?1783903670",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.jpg?1783903670",
+    "thumb": "https://cards.scryfall.io/thumb/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.webp?1783903670",
+    "grid": "https://cards.scryfall.io/grid/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.webp?1783903670",
+    "display": "https://cards.scryfall.io/display/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.webp?1783903670",
+    "art": "https://cards.scryfall.io/art/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.webp?1783903670",
+    "crop": "https://cards.scryfall.io/crop/front/f/5/f58dba4f-1abb-47a3-a684-29c32bab95c0.webp?1783903670"
+   },
+   "card_faces": [
+    {
+     "object": "card_face",
+     "name": "Emeritus of Conflict",
+     "mana_cost": "{1}{R}",
+     "type_line": "Creature \u2014 Human Wizard",
+     "oracle_text": "First strike\nWhenever you cast your third spell each turn, this creature becomes prepared. (While it's prepared, you may cast a copy of its spell. Doing so unprepares it.)",
+     "power": "2",
+     "toughness": "2",
+     "artist": "Alix Branwyn",
+     "artist_id": "4f0a0e38-d74c-4e0b-ad91-fecccb1afa5d",
+     "illustration_id": "6967d2f3-9cd9-44fd-8843-c3a4eead6c52"
+    },
+    {
+     "object": "card_face",
+     "name": "Lightning Bolt",
+     "mana_cost": "{R}",
+     "type_line": "Instant",
+     "oracle_text": "Lightning Bolt deals 3 damage to any target.",
+     "artist": "Alix Branwyn",
+     "artist_id": "4f0a0e38-d74c-4e0b-ad91-fecccb1afa5d"
+    }
+   ],
+   "scryfall_uri": "https://scryfall.com/card/sos/113/emeritus-of-conflict-lightning-bolt?utm_source=api"
+  },
+  {
+   "id": "699c0207-901e-4fe9-b22d-1f6cb994a1f2",
+   "name": "Emeritus of Conflict // Lightning Bolt",
+   "set_name": "Secrets of Strixhaven Promos",
+   "collector_number": "113p",
+   "released_at": "2026-04-24",
+   "rarity": "mythic",
+   "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.jpg?1783903545",
+    "normal": "https://cards.scryfall.io/normal/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.jpg?1783903545",
+    "large": "https://cards.scryfall.io/large/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.jpg?1783903545",
+    "png": "https://cards.scryfall.io/png/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.png?1783903545",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.jpg?1783903545",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.jpg?1783903545",
+    "thumb": "https://cards.scryfall.io/thumb/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.webp?1783903545",
+    "grid": "https://cards.scryfall.io/grid/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.webp?1783903545",
+    "display": "https://cards.scryfall.io/display/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.webp?1783903545",
+    "art": "https://cards.scryfall.io/art/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.webp?1783903545",
+    "crop": "https://cards.scryfall.io/crop/front/6/9/699c0207-901e-4fe9-b22d-1f6cb994a1f2.webp?1783903545"
+   },
+   "card_faces": [
+    {
+     "object": "card_face",
+     "name": "Emeritus of Conflict",
+     "mana_cost": "{1}{R}",
+     "type_line": "Creature \u2014 Human Wizard",
+     "oracle_text": "First strike\nWhenever you cast your third spell each turn, this creature becomes prepared. (While it's prepared, you may cast a copy of its spell. Doing so unprepares it.)",
+     "power": "2",
+     "toughness": "2",
+     "artist": "Alix Branwyn",
+     "artist_id": "4f0a0e38-d74c-4e0b-ad91-fecccb1afa5d",
+     "illustration_id": "6967d2f3-9cd9-44fd-8843-c3a4eead6c52"
+    },
+    {
+     "object": "card_face",
+     "name": "Lightning Bolt",
+     "mana_cost": "{R}",
+     "type_line": "Instant",
+     "oracle_text": "Lightning Bolt deals 3 damage to any target.",
+     "artist": "Alix Branwyn",
+     "artist_id": "4f0a0e38-d74c-4e0b-ad91-fecccb1afa5d"
+    }
+   ],
+   "scryfall_uri": "https://scryfall.com/card/psos/113p/emeritus-of-conflict-lightning-bolt?utm_source=api"
+  },
+  {
+   "id": "f11b8d24-375d-40dc-8497-c1ee779e156a",
+   "name": "Emeritus of Conflict // Lightning Bolt",
+   "set_name": "Secrets of Strixhaven",
+   "collector_number": "332",
+   "released_at": "2026-04-24",
+   "rarity": "mythic",
+   "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.jpg?1783903593",
+    "normal": "https://cards.scryfall.io/normal/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.jpg?1783903593",
+    "large": "https://cards.scryfall.io/large/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.jpg?1783903593",
+    "png": "https://cards.scryfall.io/png/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.png?1783903593",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.jpg?1783903593",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.jpg?1783903593",
+    "thumb": "https://cards.scryfall.io/thumb/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.webp?1783903593",
+    "grid": "https://cards.scryfall.io/grid/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.webp?1783903593",
+    "display": "https://cards.scryfall.io/display/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.webp?1783903593",
+    "art": "https://cards.scryfall.io/art/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.webp?1783903593",
+    "crop": "https://cards.scryfall.io/crop/front/f/1/f11b8d24-375d-40dc-8497-c1ee779e156a.webp?1783903593"
+   },
+   "card_faces": [
+    {
+     "object": "card_face",
+     "name": "Emeritus of Conflict",
+     "mana_cost": "{1}{R}",
+     "type_line": "Creature \u2014 Human Wizard",
+     "oracle_text": "First strike\nWhenever you cast your third spell each turn, this creature becomes prepared. (While it's prepared, you may cast a copy of its spell. Doing so unprepares it.)",
+     "power": "2",
+     "toughness": "2",
+     "artist": "Alix Branwyn",
+     "artist_id": "4f0a0e38-d74c-4e0b-ad91-fecccb1afa5d",
+     "illustration_id": "6967d2f3-9cd9-44fd-8843-c3a4eead6c52"
+    },
+    {
+     "object": "card_face",
+     "name": "Lightning Bolt",
+     "mana_cost": "{R}",
+     "type_line": "Instant",
+     "oracle_text": "Lightning Bolt deals 3 damage to any target.",
+     "artist": "Alix Branwyn",
+     "artist_id": "4f0a0e38-d74c-4e0b-ad91-fecccb1afa5d"
+    }
+   ],
+   "scryfall_uri": "https://scryfall.com/card/sos/332/emeritus-of-conflict-lightning-bolt?utm_source=api"
+  },
+  {
+   "id": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+   "name": "Lightning Bolt",
+   "set_name": "Marvel Super Heroes Commander",
+   "collector_number": "806",
+   "released_at": "2026-06-26",
+   "rarity": "uncommon",
+   "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+    "normal": "https://cards.scryfall.io/normal/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+    "large": "https://cards.scryfall.io/large/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+    "png": "https://cards.scryfall.io/png/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.png?1783903008",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+    "thumb": "https://cards.scryfall.io/thumb/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.webp?1783903008",
+    "grid": "https://cards.scryfall.io/grid/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.webp?1783903008",
+    "display": "https://cards.scryfall.io/display/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.webp?1783903008",
+    "art": "https://cards.scryfall.io/art/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.webp?1783903008",
+    "crop": "https://cards.scryfall.io/crop/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.webp?1783903008"
+   },
+   "scryfall_uri": "https://scryfall.com/card/msc/806/lightning-bolt?utm_source=api"
+  },
+  {
+   "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8",
+   "name": "Lightning Bolt",
+   "set_name": "Magic 2010",
+   "collector_number": "146",
+   "released_at": "2009-07-17",
+   "rarity": "common",
+   "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371",
+    "normal": "https://cards.scryfall.io/normal/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371",
+    "large": "https://cards.scryfall.io/large/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371",
+    "png": "https://cards.scryfall.io/png/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.png?1783942371",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371",
+    "thumb": "https://cards.scryfall.io/thumb/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.webp?1783942371",
+    "grid": "https://cards.scryfall.io/grid/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.webp?1783942371",
+    "display": "https://cards.scryfall.io/display/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.webp?1783942371",
+    "art": "https://cards.scryfall.io/art/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.webp?1783942371",
+    "crop": "https://cards.scryfall.io/crop/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.webp?1783942371"
+   },
+   "scryfall_uri": "https://scryfall.com/card/m10/146/lightning-bolt?utm_source=api"
+  }
+ ]
+}

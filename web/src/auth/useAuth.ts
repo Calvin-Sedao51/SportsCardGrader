@@ -20,6 +20,13 @@ export interface AuthState {
 export const NOT_CONFIGURED_MESSAGE =
   'Sign-in is not configured on this build. Scanning and the community feed still work.'
 
+// Shown wherever a sign-in control would otherwise appear on a build with
+// no Google client id: a button that can never succeed is worse than a note.
+export const SIGN_IN_UNAVAILABLE_NOTE = "Sign-in isn't set up on this server yet."
+
+export const PROMPT_NOT_SHOWN_MESSAGE =
+  "Google sign-in didn't open. Check pop-up settings and try again."
+
 function initial(): AuthState {
   const session = loadSession()
   return session
@@ -69,10 +76,12 @@ async function completeLogin(credential: string): Promise<void> {
 
 export async function signIn(): Promise<void> {
   set({ ...state, status: 'signing_in', error: null })
-  const shown = await googleSignIn(credential => { completeLogin(credential) })
-  if (!shown) {
-    set({ status: 'signed_out', user: null, error: NOT_CONFIGURED_MESSAGE })
-  }
+  const outcome = await googleSignIn(credential => { completeLogin(credential) })
+  // A credential may already have completed the login (or failed it) by the
+  // time the prompt reports back; only a still-pending sign-in is reset.
+  if (outcome === 'shown' || state.status !== 'signing_in') return
+  set({ status: 'signed_out', user: null,
+        error: outcome === 'unavailable' ? NOT_CONFIGURED_MESSAGE : PROMPT_NOT_SHOWN_MESSAGE })
 }
 
 export function signOut(): void {

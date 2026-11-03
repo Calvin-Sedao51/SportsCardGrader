@@ -96,6 +96,8 @@ make test
 
 Server tests use mocked AI and eBay responses — no credentials or network needed, so CI is green for every contributor out of the box.
 
+Browser automations (sign-up, sign-in, grading, publishing, auth rules) run headed via `playwright-cli`: `bash e2e/run-all.sh`. See [e2e/README.md](e2e/README.md).
+
 ## Contributing
 
 Contributions welcome — open an issue or PR. Please keep `make test` green.

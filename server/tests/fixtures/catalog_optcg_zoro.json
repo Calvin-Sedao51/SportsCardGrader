@@ -1,0 +1,34 @@
+[
+ {
+  "card_name": "Roronoa Zoro (025)",
+  "set_name": "Romance Dawn",
+  "rarity": "SR",
+  "card_set_id": "OP01-025",
+  "card_image_id": "OP01-025",
+  "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-025.jpg"
+ },
+ {
+  "card_name": "Roronoa Zoro (001)",
+  "set_name": "Romance Dawn",
+  "rarity": "L",
+  "card_set_id": "OP01-001",
+  "card_image_id": "OP01-001",
+  "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001.jpg"
+ },
+ {
+  "card_name": "Roronoa Zoro (025) (Parallel)",
+  "set_name": "Romance Dawn",
+  "rarity": "SR",
+  "card_set_id": "OP01-025",
+  "card_image_id": "OP01-025_p1",
+  "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-025_p1.jpg"
+ },
+ {
+  "card_name": "Roronoa Zoro (001) (Parallel)",
+  "set_name": "Romance Dawn",
+  "rarity": "L",
+  "card_set_id": "OP01-001",
+  "card_image_id": "OP01-001_p1",
+  "card_image": "https://optcgapi.com/media/static/Card_Images/OP01-001_p1.jpg"
+ }
+]

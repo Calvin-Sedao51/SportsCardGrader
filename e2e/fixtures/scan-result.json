@@ -1,0 +1,58 @@
+{
+  "vision": {
+    "photo_ok": true,
+    "photo_issue": null,
+    "identity": {
+      "subject": "Luka Doncic",
+      "category": "sports",
+      "year": "2018",
+      "set_name": "Panini Prizm",
+      "card_number": "280",
+      "variant": null,
+      "search_string": "2018 Panini Prizm Luka Doncic #280",
+      "confidence": 0.92
+    },
+    "condition": {
+      "observations": [
+        {
+          "area": "corners",
+          "severity": "minor",
+          "note": "Top-right corner shows a touch of fraying under magnification."
+        },
+        {
+          "area": "surface",
+          "severity": "none",
+          "note": "Surface looks clean with no visible scratches or print lines."
+        },
+        {
+          "area": "centering",
+          "severity": "minor",
+          "note": "Left-right centering is roughly 60/40 toward the left border."
+        }
+      ],
+      "grade_low": 6,
+      "grade_high": 8
+    },
+    "authenticity": {
+      "red_flags": [],
+      "risk": "low"
+    },
+    "ai_value_note": null
+  },
+  "comps": {
+    "source": "active_listings",
+    "raw_count": 12,
+    "raw_low": 35.0,
+    "raw_median": 52.0,
+    "graded_count": 4,
+    "graded_low": 120.0,
+    "graded_median": 165.0
+  },
+  "comps_error": null,
+  "verdict": {
+    "value_low": 45.0,
+    "value_high": 70.0,
+    "verdict": "fair",
+    "reasoning": "Mocked e2e response: asking price sits inside the raw comp range."
+  }
+}
