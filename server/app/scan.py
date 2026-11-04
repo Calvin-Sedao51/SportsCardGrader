@@ -40,10 +40,13 @@ async def search_comps(query: str, category: CardCategory = "sports") -> list[Co
 
 
 async def lookup_catalog(identity: Identity) -> Optional[CatalogMatch]:
-    if identity.category not in _catalog_sources:
-        _catalog_sources[identity.category] = build_catalog_source(
-            identity.category, get_settings())
-    source = _catalog_sources[identity.category]
+    source = _catalog_sources.get(identity.category)
+    if source is None:
+        # Not cached when None: the local sports DB may get its first cards
+        # (daily sync) while the server is running, and the check is cheap.
+        source = build_catalog_source(identity.category, get_settings())
+        if source is not None:
+            _catalog_sources[identity.category] = source
     return await source.lookup(identity) if source is not None else None
 
 

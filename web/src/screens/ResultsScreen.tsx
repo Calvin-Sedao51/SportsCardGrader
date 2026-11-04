@@ -41,6 +41,7 @@ const catalogSourceNames: Record<CatalogSourceName, string> = {
   ygoprodeck: 'YGOPRODeck',
   optcg: 'OPTCG',
   cardsight: 'CardSight',
+  sportsdb: 'Local sports DB',
 }
 
 // Keep in sync with VERIFIED_THRESHOLD in server/app/catalog/__init__.py.

@@ -10,10 +10,16 @@ dependencies = [
     "pydantic-settings>=2.4",
     "python-multipart>=0.0.9",
     "lighthive>=0.4",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+# Headless Chromium for sites that 403 plain HTTP (Topps, Panini):
+#   pip install -e ".[browser]" && playwright install chromium
+browser = ["playwright>=1.47"]
 
 [build-system]
 requires = ["setuptools>=69"]
@@ -24,3 +30,5 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = ["live: hits real manufacturer sites (deselected by default)"]
+addopts = "-m 'not live'"

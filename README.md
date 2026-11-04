@@ -74,6 +74,34 @@ with an explicit "public and permanent" consent step.
 
 The free default prices against **active eBay listings** — asking prices, which skew high. If you have access to actual sold data (a price-guide service like PriceCharting/SportsCardsPro or Card Hedge, or your own CardLadder exports), you can swap it in without touching the pipeline: implement the small adapter interface in [`server/app/pricing.py`](server/app/pricing.py) — a `source_type` of `"sold"` plus one async `search(query)` returning comp listings — register it, and set `PRICING_SOURCE=your_source` in `.env`. The verdict wording and the app's captions automatically switch from "asking prices" to "sold prices". See the module docstring in `app/pricing.py` for the three-step walkthrough.
 
+### Sports card database (local scraper)
+
+Sports scans can be checked against a local database of manufacturer
+releases and checklists instead of (or before) the quota-limited CardSight
+API. A daily scraper pulls the trading-card sections of Topps, Panini, Upper
+Deck, Leaf, Onyx and Wild Card into `server/data/sportsdb.sqlite`
+(gitignored; override with `SPORTSDB_PATH`). During a scan the local DB is
+tried first and CardSight only if it finds nothing and `CARDSIGHT_API_KEY`
+is set; with neither, sports scans keep the AI-only identity.
+
+```bash
+cd server
+.venv/bin/python -m app.sportsdb sync                      # all manufacturers
+.venv/bin/python -m app.sportsdb sync --source upperdeck   # one site
+.venv/bin/python -m app.sportsdb stats                     # row counts
+.venv/bin/python -m app.sportsdb runs                      # recent sync runs
+.venv/bin/python -m app.sportsdb search --player "Connor Bedard" --year 2025
+```
+
+In Claude Code, `/card-db-sync` runs the sync and summarizes new releases
+and blocked sources. For an automatic daily run (06:30 local, logs in
+`server/data/sportsdb-logs/`): `server/scripts/install_sportsdb_launchd.sh`
+(`--dry-run` to preview, `--run-now`, `--uninstall`).
+
+Caveats: Topps and Panini sit behind Cloudflare and may report `blocked`
+rather than data — the adapters never invent rows. The database stays on
+your machine until a real backend exists.
+
 ## Honest limitations
 
 - **The grade is a range, not a certification.** It's an estimate from a phone photo. Surface flaws, print lines, and edge wear that graders catch under magnification may be invisible in your shot.

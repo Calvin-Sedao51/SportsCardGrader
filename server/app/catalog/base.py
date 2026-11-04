@@ -1,4 +1,7 @@
-"""Shared plumbing for catalog adapters: HTTP client and best-candidate pick."""
+"""Shared plumbing for catalog adapters: HTTP client and best-candidate pick.
+
+``pick`` is module-level so non-HTTP adapters (the local sports DB) score
+candidates with the same weights and threshold as the HTTP ones."""
 from dataclasses import dataclass
 from typing import Optional
 
@@ -38,18 +41,23 @@ class HttpSource:
                      **(headers or {})})
 
     def pick(self, identity: Identity, candidates: list[Candidate]) -> Optional[CatalogMatch]:
-        best: Optional[tuple[float, Candidate]] = None
-        for c in candidates:
-            s = score(identity.subject, identity.card_number, identity.set_name,
-                      cand_name=c.name, cand_number=c.card_number,
-                      cand_set=c.set_name) - c.penalty
-            if best is None or s > best[0]:
-                best = (s, c)
-        if best is None or best[0] < MIN_CONFIDENCE:
-            return None
-        s, c = best
-        return CatalogMatch(
-            source=self.source, catalog_id=c.catalog_id, name=c.name,
-            set_name=c.set_name, card_number=c.card_number, year=c.year,
-            rarity=c.rarity, image_url=c.image_url, url=c.url,
-            match_confidence=max(0.0, min(1.0, s)))
+        return pick(self.source, identity, candidates)
+
+
+def pick(source: CatalogSourceName, identity: Identity,
+         candidates: list[Candidate]) -> Optional[CatalogMatch]:
+    best: Optional[tuple[float, Candidate]] = None
+    for c in candidates:
+        s = score(identity.subject, identity.card_number, identity.set_name,
+                  cand_name=c.name, cand_number=c.card_number,
+                  cand_set=c.set_name) - c.penalty
+        if best is None or s > best[0]:
+            best = (s, c)
+    if best is None or best[0] < MIN_CONFIDENCE:
+        return None
+    s, c = best
+    return CatalogMatch(
+        source=source, catalog_id=c.catalog_id, name=c.name,
+        set_name=c.set_name, card_number=c.card_number, year=c.year,
+        rarity=c.rarity, image_url=c.image_url, url=c.url,
+        match_confidence=max(0.0, min(1.0, s)))
