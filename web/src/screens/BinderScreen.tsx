@@ -151,7 +151,8 @@ export default function BinderScreen() {
       <ul className="history">
         {visible.map(item => (
           <li key={`${item.author}/${item.permlink}`}>
-            <button className="history-row" onClick={() => setDetail(item)}>
+            <button className="history-row with-thumb" onClick={() => setDetail(item)}>
+              <img className="thumb" src={item.card.images.front} alt="" loading="lazy" />
               <span className="player">
                 {item.card.identity.subject}
                 {item.card.slab ? ` · ${item.card.slab.company} ${item.card.slab.grade}` : ''}
