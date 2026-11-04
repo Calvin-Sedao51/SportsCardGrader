@@ -1,5 +1,6 @@
 """Core sportsdb: storage, sync orchestration, polite fetcher. No network."""
 import asyncio
+from datetime import datetime, timezone
 
 import httpx
 import pytest
@@ -100,7 +101,9 @@ def test_search_cards_matches_words_and_season_year(db):
 def test_releases_since_days_includes_undated_recent(db):
     db.upsert_release(release(source_id="old", release_date="2020-01-01"))
     db.upsert_release(release(source_id="undated", release_date=None))
-    db.upsert_release(release(source_id="new"))
+    # Dated relative to now: the fixture's fixed release_date ages out of a 30-day window.
+    today = datetime.now(timezone.utc).date().isoformat()
+    db.upsert_release(release(source_id="new", release_date=today))
     assert {r["source_id"] for r in db.releases(since_days=30)} == {"undated", "new"}
 
 
